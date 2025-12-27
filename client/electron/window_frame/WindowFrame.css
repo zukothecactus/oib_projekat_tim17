@@ -1,0 +1,160 @@
+/* Windows 11 Dark Theme Variables */
+:root {
+  --win11-bg: #202020;
+  --win11-titlebar-bg: rgba(32, 32, 32, 0.85);
+  --win11-titlebar-hover: rgba(255, 255, 255, 0.06);
+  --win11-titlebar-active: rgba(255, 255, 255, 0.04);
+  --win11-close-hover: #c42b1c;
+  --win11-close-active: #a52713;
+  --win11-text: #ffffff;
+  --win11-text-secondary: #e1e1e1;
+  --win11-border: rgba(255, 255, 255, 0.08);
+  --win11-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Force dark theme on body */
+body {
+  background: var(--win11-bg);
+  color: var(--win11-text);
+  font-family: 'Segoe UI Variable', 'Segoe UI', -apple-system, system-ui, sans-serif;
+}
+
+/* Title Bar */
+.title-bar {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: var(--win11-titlebar-bg);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border-bottom: 1px solid var(--win11-border);
+  -webkit-app-region: drag;
+  user-select: none;
+  position: relative;
+  z-index: 9999;
+}
+
+/* App Icon */
+.title-bar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--win11-text-secondary);
+  flex-shrink: 0;
+}
+
+.title-bar-icon svg {
+  opacity: 0.8;
+}
+
+/* Title */
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--win11-text);
+  letter-spacing: 0.3px;
+  padding: 0 140px; /* Space for controls on both sides */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Window Controls */
+.window-controls {
+  display: flex;
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+/* Control Buttons */
+.control-btn {
+  width: 46px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--win11-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.1s ease;
+  padding: 0;
+  outline: none;
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Hover States */
+.control-btn:not(:disabled):hover {
+  background: var(--win11-titlebar-hover);
+}
+
+.control-btn:not(:disabled):active {
+  background: var(--win11-titlebar-active);
+}
+
+/* Close Button Special Styling */
+.control-btn.close:not(:disabled):hover {
+  background: var(--win11-close-hover);
+  color: white;
+}
+
+.control-btn.close:not(:disabled):active {
+  background: var(--win11-close-active);
+  color: white;
+}
+
+/* Minimize Button - Line */
+.control-btn.minimize svg rect {
+  transform: translateY(-0.5px);
+}
+
+/* Focus Styles */
+.control-btn:focus-visible {
+  outline: 2px solid rgba(96, 205, 255, 0.5);
+  outline-offset: -2px;
+}
+
+/* When window is maximized, remove border radius */
+.window-maximized .title-bar {
+  border-radius: 0;
+}
+
+/* Optional: Add subtle shadow to title bar */
+.title-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  pointer-events: none;
+}
+
+/* Responsive: Smaller screens */
+@media (max-width: 768px) {
+  .title {
+    padding: 0 100px;
+    font-size: 11px;
+  }
+  
+  .control-btn {
+    width: 40px;
+  }
+}

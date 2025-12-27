@@ -1,0 +1,647 @@
+/* ============================================
+   Windows 11 Global Styles - index.css
+   ============================================ */
+
+/* CSS Variables */
+:root {
+  /* Background Colors */
+  --win11-bg: #202020;
+  --win11-mica-bg: rgba(32, 32, 32, 0.5);
+  --win11-mica-bg-alt: rgba(28, 28, 28, 0.7);
+  --win11-acrylic-bg: rgba(44, 44, 44, 0.85);
+  --win11-card-bg: rgba(45, 45, 45, 0.7);
+  
+  /* Text Colors */
+  --win11-text-primary: #ffffff;
+  --win11-text-secondary: #e1e1e1;
+  --win11-text-tertiary: #a6a6a6;
+  
+  /* Accent Colors */
+  --win11-accent: #60cdff;
+  --win11-accent-hover: #5db9ea;
+  --win11-accent-pressed: #4a9fd5;
+  
+  /* UI Colors */
+  --win11-divider: rgba(255, 255, 255, 0.08);
+  --win11-hover: rgba(255, 255, 255, 0.06);
+  --win11-active: rgba(255, 255, 255, 0.04);
+  --win11-close-hover: #c42b1c;
+  --win11-close-active: #a52713;
+  
+  /* Shadows */
+  --win11-shadow-small: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --win11-shadow-medium: 0 4px 14px rgba(0, 0, 0, 0.4);
+  --win11-shadow-large: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --win11-shadow-xlarge: 0 16px 48px rgba(0, 0, 0, 0.6);
+  
+  /* Border Radius */
+  --win11-radius-small: 4px;
+  --win11-radius-medium: 8px;
+  --win11-radius-large: 12px;
+  
+  /* Transitions */
+  --win11-transition-fast: 0.1s ease;
+  --win11-transition-normal: 0.2s ease;
+  --win11-transition-slow: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Reset & Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Segoe UI Variable', 'Segoe UI', -apple-system, system-ui, sans-serif;
+  background: var(--win11-bg);
+  color: var(--win11-text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  font-size: 28px;
+}
+
+h2 {
+  font-size: 20px;
+}
+
+h3 {
+  font-size: 16px;
+}
+
+h4 {
+  font-size: 14px;
+}
+
+p {
+  color: var(--win11-text-secondary);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+strong {
+  font-weight: 600;
+  color: var(--win11-text-primary);
+}
+
+/* Links */
+a {
+  color: var(--win11-accent);
+  text-decoration: none;
+  transition: color var(--win11-transition-fast);
+}
+
+a:hover {
+  color: var(--win11-accent-hover);
+  text-decoration: underline;
+}
+
+a:active {
+  color: var(--win11-accent-pressed);
+}
+
+/* Material Effects */
+.mica {
+  background: var(--win11-mica-bg);
+  backdrop-filter: blur(80px) saturate(180%);
+  -webkit-backdrop-filter: blur(80px) saturate(180%);
+}
+
+.acrylic {
+  background: var(--win11-acrylic-bg);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border: 1px solid var(--win11-divider);
+}
+
+/* Card Component */
+.card {
+  background: var(--win11-card-bg);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-radius: var(--win11-radius-large);
+  padding: 24px;
+  box-shadow: var(--win11-shadow-medium);
+  border: 1px solid var(--win11-divider);
+  transition: transform var(--win11-transition-normal), 
+              box-shadow var(--win11-transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--win11-shadow-large);
+}
+
+/* Buttons */
+button, .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--win11-radius-small);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--win11-transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  outline: none;
+}
+
+button:disabled, .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Accent Button */
+.btn-accent {
+  background: var(--win11-accent);
+  color: #000000;
+}
+
+.btn-accent:hover:not(:disabled) {
+  background: var(--win11-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(96, 205, 255, 0.3);
+}
+
+.btn-accent:active:not(:disabled) {
+  background: var(--win11-accent-pressed);
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Standard Button */
+.btn-standard {
+  background: var(--win11-card-bg);
+  color: var(--win11-text-primary);
+  border: 1px solid var(--win11-divider);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+}
+
+.btn-standard:hover:not(:disabled) {
+  background: var(--win11-acrylic-bg);
+  border-color: var(--win11-accent);
+}
+
+.btn-standard:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--win11-text-primary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--win11-hover);
+}
+
+.btn-ghost:active:not(:disabled) {
+  background: var(--win11-active);
+}
+
+/* Input Fields */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--win11-divider);
+  border-radius: var(--win11-radius-small);
+  background: var(--win11-card-bg);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  color: var(--win11-text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all var(--win11-transition-normal);
+  outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--win11-accent);
+  box-shadow: 0 0 0 1px var(--win11-accent);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--win11-text-tertiary);
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Textarea */
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Select */
+select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* Checkbox */
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--win11-text-tertiary);
+  border-radius: var(--win11-radius-small);
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--win11-transition-normal);
+  background: var(--win11-card-bg);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--win11-accent);
+  border-color: var(--win11-accent);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #000000;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Radio Button */
+input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--win11-text-tertiary);
+  border-radius: 50%;
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--win11-transition-normal);
+  background: var(--win11-card-bg);
+}
+
+input[type="radio"]:checked {
+  border-color: var(--win11-accent);
+}
+
+input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--win11-accent);
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--win11-text-tertiary);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background var(--win11-transition-normal);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform var(--win11-transition-normal);
+}
+
+.toggle.active {
+  background: var(--win11-accent);
+}
+
+.toggle.active::after {
+  transform: translateX(20px);
+}
+
+/* Progress Bar */
+.progress {
+  width: 100%;
+  height: 4px;
+  background: var(--win11-divider);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--win11-accent);
+  border-radius: 2px;
+  transition: width var(--win11-transition-slow);
+}
+
+/* List Items */
+.list-item {
+  padding: 12px 16px;
+  border-radius: var(--win11-radius-medium);
+  cursor: pointer;
+  transition: background var(--win11-transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.list-item:hover {
+  background: var(--win11-hover);
+}
+
+.list-item:active {
+  background: var(--win11-active);
+}
+
+/* Divider */
+hr {
+  border: none;
+  border-top: 1px solid var(--win11-divider);
+  margin: 16px 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--win11-text-tertiary);
+  border-radius: 6px;
+  border: 3px solid var(--win11-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--win11-text-secondary);
+}
+
+/* Modal/Dialog Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn var(--win11-transition-normal);
+}
+
+.overlay-blur-none {
+  background-image: var(--win11-bg);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn var(--win11-transition-normal);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Window/Dialog */
+.window {
+  background: var(--win11-acrylic-bg);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border-radius: var(--win11-radius-large);
+  box-shadow: var(--win11-shadow-xlarge);
+  border: 1px solid var(--win11-divider);
+  overflow: hidden;
+  animation: slideIn var(--win11-transition-slow);
+  max-width: 90%;
+  max-height: 90vh;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Title Bar */
+.titlebar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  background: var(--win11-mica-bg);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-bottom: 1px solid var(--win11-divider);
+  padding: 0 12px;
+}
+
+.titlebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--win11-text-secondary);
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.titlebar-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--win11-text-primary);
+  letter-spacing: 0.3px;
+}
+
+.titlebar-controls {
+  display: flex;
+  margin-left: auto;
+}
+
+.titlebar-btn {
+  width: 40px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--win11-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--win11-transition-fast);
+  padding: 0;
+  outline: none;
+  border-radius: var(--win11-radius-small);
+  margin: 0 2px;
+}
+
+.titlebar-btn:hover {
+  background: var(--win11-hover);
+}
+
+.titlebar-btn:active {
+  background: var(--win11-active);
+}
+
+.titlebar-btn.close:hover {
+  background: var(--win11-close-hover);
+  color: white;
+}
+
+.titlebar-btn.close:active {
+  background: var(--win11-close-active);
+}
+
+/* Window Content */
+.window-content {
+  padding: 24px;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--win11-divider);
+  border-top-color: var(--win11-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Utility Classes */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-5 { gap: 20px; }
+.gap-6 { gap: 24px; }
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  h1 { font-size: 24px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 15px; }
+  
+  .card {
+    padding: 16px;
+  }
+  
+  .window-content {
+    padding: 16px;
+  }
+}
