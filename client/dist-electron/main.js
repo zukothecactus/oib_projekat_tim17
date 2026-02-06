@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 const __filename$1 = fileURLToPath(import.meta.url);
 const __dirname$1 = path.dirname(__filename$1);
 let win = null;
-const preloadPath = path.join(__dirname$1, "../src/preload.mjs");
+const preloadPath = path.join(__dirname$1, "../dist-electron/preload.mjs");
 function createWindow() {
   win = new BrowserWindow({
     width: 1e3,

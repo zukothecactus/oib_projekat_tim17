@@ -7,9 +7,7 @@ const __dirname = path.dirname(__filename)
 
 let win: BrowserWindow | null = null
 
-const preloadPath = import.meta.env.VITE_PRODUCTION
-  ? path.join(__dirname, '../dist-electron/preload.mjs')
-  : path.join(__dirname, '../src/preload.mjs')
+const preloadPath = path.join(__dirname, '../dist-electron/preload.mjs')
 
 function createWindow() {
   win = new BrowserWindow({

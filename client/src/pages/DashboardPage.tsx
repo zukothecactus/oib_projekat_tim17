@@ -38,13 +38,7 @@ type ProductionLog = {
   time: string;
 };
 
-const plantsSeed: PlantRow[] = [
-  { id: "1", name: "Lavanda", latinName: "Lavandula angustifolia", strength: 3.2, country: "Francuska", status: "Posađena" },
-  { id: "2", name: "Ruža", latinName: "Rosa damascena", strength: 4.5, country: "Bugarska", status: "Ubrana" },
-  { id: "3", name: "Bergamot", latinName: "Citrus bergamia", strength: 2.8, country: "Italija", status: "Prerađena" },
-  { id: "4", name: "Jasmin", latinName: "Jasminum officinale", strength: 3.9, country: "Egipat", status: "Ubrana" },
-  { id: "5", name: "Sandalovina", latinName: "Santalum album", strength: 4.1, country: "Indija", status: "Posađena" },
-];
+const plantsSeed: PlantRow[] = [];
 
 const invoicesSeed: InvoiceRow[] = [
   { id: "FR-2025-001", saleType: "Maloprodaja", payment: "Kartično", amount: 12500, date: "22.10.2025" },
@@ -72,17 +66,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     { id: "log-3", type: "WARNING", message: "Upozorenje: Jačina ulja prešla 4.0", time: "14:15" },
   ]);
 
-  const filteredPlants = useMemo(() => {
-    const q = plantQuery.trim().toLowerCase();
-    if (!q) return plantsSeed;
-    return plantsSeed.filter((p) =>
-      [p.name, p.latinName, p.country, p.status]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [plantQuery]);
-
+  
   const filteredInvoices = useMemo(() => {
     const q = invoiceQuery.trim().toLowerCase();
     if (!q) return invoicesSeed;
@@ -102,23 +86,46 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     ].slice(0, 50));
   };
 
-  const pickStatus = (statuses: Set<PlantStatus>): PlantStatus => {
+  function pickStatus(statuses: Set<PlantStatus>): PlantStatus {
     if (statuses.has("PRERADJENA")) return "PRERADJENA";
     if (statuses.has("UBRANA")) return "UBRANA";
     return "POSADJENA";
-  };
+  }
 
-  const statusLabel = (status: PlantStatus) => {
+  function statusLabel(status: PlantStatus): PlantStatusLabel {
     if (status === "POSADJENA") return "Posađena";
     if (status === "UBRANA") return "Ubrana";
     return "Prerađena";
-  };
+  }
 
-  const statusClass = (status: PlantStatus) => {
+  function statusClass(status: PlantStatus): string {
     if (status === "POSADJENA") return "status-green";
     if (status === "UBRANA") return "status-yellow";
     return "status-purple";
-  };
+  }
+
+  const overviewPlants = useMemo<PlantRow[]>(() => {
+    if (!productionPlants.length) return plantsSeed;
+    return productionPlants.map((plant) => ({
+      id: plant.id,
+      name: plant.commonName,
+      latinName: plant.latinName,
+      strength: Number(plant.aromaticStrength),
+      country: plant.originCountry,
+      status: statusLabel(plant.status),
+    }));
+  }, [productionPlants]);
+
+  const filteredPlants = useMemo(() => {
+    const q = plantQuery.trim().toLowerCase();
+    if (!q) return overviewPlants;
+    return overviewPlants.filter((p) =>
+      [p.name, p.latinName, p.country, p.status]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [plantQuery, overviewPlants]);
 
   const groupedPlants = useMemo(() => {
     const map = new Map<string, { commonName: string; latinName: string; originCountry: string; count: number; strengthSum: number; statuses: Set<PlantStatus> }>();
@@ -257,7 +264,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
   };
 
   useEffect(() => {
-    if (activeTab === "Proizvodnja") {
+    if (activeTab === "Proizvodnja" || activeTab === "Pregled") {
       fetchProductionPlants();
     }
   }, [activeTab, token]);
@@ -312,19 +319,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPlants.map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.name}</td>
-                          <td className="text-muted">{p.latinName}</td>
-                          <td>{p.strength.toFixed(1)}</td>
-                          <td>{p.country}</td>
-                          <td>
-                            <span className={`status-chip ${p.status === "Posađena" ? "status-green" : p.status === "Ubrana" ? "status-yellow" : "status-purple"}`}>
-                              {p.status}
-                            </span>
+                      {filteredPlants.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="text-muted">
+                            Nema biljaka za prikaz.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredPlants.map((p) => (
+                          <tr key={p.id}>
+                            <td>{p.name}</td>
+                            <td className="text-muted">{p.latinName}</td>
+                            <td>{p.strength.toFixed(1)}</td>
+                            <td>{p.country}</td>
+                            <td>
+                              <span className={`status-chip ${p.status === "Posađena" ? "status-green" : p.status === "Ubrana" ? "status-yellow" : "status-purple"}`}>
+                                {p.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
