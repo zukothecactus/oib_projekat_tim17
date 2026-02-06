@@ -29,6 +29,20 @@ type InvoiceRow = {
   date: string;
 };
 
+type PerfumeType = "Parfem" | "Kolonjska voda";
+
+type PerfumeStatus = "U izradi" | "Zavrseno";
+
+type PerfumeRow = {
+  id: string;
+  name: string;
+  type: PerfumeType;
+  volume: number;
+  serial: string;
+  expiresAt: string;
+  status: PerfumeStatus;
+};
+
 type ProductionLogType = "INFO" | "WARNING" | "ERROR";
 
 type ProductionLog = {
@@ -44,6 +58,36 @@ const invoicesSeed: InvoiceRow[] = [
   { id: "FR-2025-001", saleType: "Maloprodaja", payment: "Kartično", amount: 12500, date: "22.10.2025" },
   { id: "FR-2025-002", saleType: "Veleprodaja", payment: "Uplata na račun", amount: 45800, date: "21.10.2025" },
   { id: "FR-2025-003", saleType: "Maloprodaja", payment: "Gotovina", amount: 8900, date: "21.10.2025" },
+];
+
+const perfumesSeed: PerfumeRow[] = [
+  {
+    id: "PF-001",
+    name: "Lavande Noire",
+    type: "Parfem",
+    volume: 150,
+    serial: "PP-2025-001",
+    expiresAt: "22.10.2028",
+    status: "Zavrseno",
+  },
+  {
+    id: "PF-002",
+    name: "Rose Imperial",
+    type: "Kolonjska voda",
+    volume: 250,
+    serial: "PP-2025-002",
+    expiresAt: "10.11.2028",
+    status: "U izradi",
+  },
+  {
+    id: "PF-003",
+    name: "Jardin Jasmin",
+    type: "Parfem",
+    volume: 150,
+    serial: "PP-2025-003",
+    expiresAt: "03.12.2028",
+    status: "Zavrseno",
+  },
 ];
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI }) => {
@@ -65,6 +109,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     { id: "log-1", type: "INFO", message: "Zasađena biljka: Lavanda", time: "14:23" },
     { id: "log-2", type: "INFO", message: "Prerada završena: 5 bočica parfema", time: "14:20" },
     { id: "log-3", type: "WARNING", message: "Upozorenje: Jačina ulja prešla 4.0", time: "14:15" },
+  ]);
+  const [processingForm, setProcessingForm] = useState({
+    name: "",
+    type: "Parfem" as PerfumeType,
+    volume: 150,
+    serial: "",
+    expiresAt: "",
+    status: "U izradi" as PerfumeStatus,
+  });
+  const [processingLogs, setProcessingLogs] = useState<ProductionLog[]>([
+    { id: "proc-1", type: "INFO", message: "Pokrenuta prerada: Lavande Noire", time: "12:05" },
+    { id: "proc-2", type: "INFO", message: "Završena prerada: Rose Imperial", time: "11:52" },
   ]);
 
   
@@ -104,6 +160,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     if (status === "UBRANA") return "status-yellow";
     return "status-purple";
   }
+
+  const processingStatusClass = (status: PerfumeStatus) => {
+    if (status === "Zavrseno") return "status-green";
+    return "status-yellow";
+  };
+
+  const handleProcessingSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const entry: ProductionLog = {
+      id: `proc-${Date.now()}`,
+      type: "INFO",
+      message: `Zahtev za preradu: ${processingForm.name || "Novi parfem"}`,
+      time: new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
+    };
+    setProcessingLogs((prev) => [entry, ...prev].slice(0, 20));
+  };
 
   const overviewPlants = useMemo<PlantRow[]>(() => {
     if (!productionPlants.length) return plantsSeed;
@@ -619,9 +691,125 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                   </section>
                 </div>
               ) : (
-                <div className="panel panel-empty">
-                  <h2>Servis prerade</h2>
-                  <p>Ovaj deo je u izradi.</p>
+                <div className="production-grid">
+                  <section className="panel">
+                    <header className="panel-header">
+                      <div className="panel-title">Servis prerade</div>
+                    </header>
+
+                    <form className="production-form" onSubmit={handleProcessingSubmit}>
+                      <div className="form-grid">
+                        <label>
+                          Naziv
+                          <input
+                            type="text"
+                            value={processingForm.name}
+                            onChange={(e) => setProcessingForm({ ...processingForm, name: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Tip
+                          <select
+                            value={processingForm.type}
+                            onChange={(e) => setProcessingForm({ ...processingForm, type: e.target.value as PerfumeType })}
+                          >
+                            <option value="Parfem">Parfem</option>
+                            <option value="Kolonjska voda">Kolonjska voda</option>
+                          </select>
+                        </label>
+                        <label>
+                          Zapremina (ml)
+                          <select
+                            value={processingForm.volume}
+                            onChange={(e) => setProcessingForm({ ...processingForm, volume: Number(e.target.value) })}
+                          >
+                            <option value={150}>150</option>
+                            <option value={250}>250</option>
+                          </select>
+                        </label>
+                        <label>
+                          Serijski broj
+                          <input
+                            type="text"
+                            value={processingForm.serial}
+                            onChange={(e) => setProcessingForm({ ...processingForm, serial: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Rok trajanja
+                          <input
+                            type="text"
+                            placeholder="dd.mm.yyyy"
+                            value={processingForm.expiresAt}
+                            onChange={(e) => setProcessingForm({ ...processingForm, expiresAt: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Status
+                          <select
+                            value={processingForm.status}
+                            onChange={(e) => setProcessingForm({ ...processingForm, status: e.target.value as PerfumeStatus })}
+                          >
+                            <option value="U izradi">U izradi</option>
+                            <option value="Zavrseno">Zavrseno</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="form-actions">
+                        <button className="btn btn-accent" type="submit">
+                          Pokreni preradu
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="table-wrapper">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Naziv</th>
+                            <th>Tip</th>
+                            <th>Zapremina</th>
+                            <th>Serijski broj</th>
+                            <th>Rok trajanja</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {perfumesSeed.map((p) => (
+                            <tr key={p.id}>
+                              <td>{p.name}</td>
+                              <td>{p.type}</td>
+                              <td>{p.volume} ml</td>
+                              <td>{p.serial}</td>
+                              <td>{p.expiresAt}</td>
+                              <td>
+                                <span className={`status-chip ${processingStatusClass(p.status)}`}>
+                                  {p.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <section className="panel">
+                    <header className="panel-header">
+                      <div className="panel-title">Dnevnik prerade</div>
+                    </header>
+                    <div className="log-list">
+                      {processingLogs.map((log) => (
+                        <div key={log.id} className={`log-item log-${log.type.toLowerCase()}`}>
+                          <div className="log-meta">{log.time}</div>
+                          <div className="log-message">{log.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <footer className="panel-footer">
+                      Ukupno akcija: {processingLogs.length}
+                    </footer>
+                  </section>
                 </div>
               )}
             </div>
