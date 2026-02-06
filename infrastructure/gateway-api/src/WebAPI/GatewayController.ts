@@ -27,6 +27,10 @@ export class GatewayController {
     this.router.post("/production/plant", authenticate, authorize("admin", "seller"), this.plantNew.bind(this));
     this.router.post("/production/change-strength", authenticate, authorize("admin", "seller"), this.changeStrength.bind(this));
     this.router.post("/production/harvest", authenticate, authorize("admin", "seller"), this.harvest.bind(this));
+
+    // Processing
+    this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller"), this.listProcessingPerfumes.bind(this));
+    this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller"), this.createProcessingPerfume.bind(this));
   }
 
   // Auth
@@ -99,6 +103,25 @@ export class GatewayController {
   private async harvest(req: Request, res: Response): Promise<void> {
     try {
       const result = await this.gatewayService.harvest(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  // Processing
+  private async listProcessingPerfumes(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listProcessingPerfumes();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async createProcessingPerfume(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.createProcessingPerfume(req.body);
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ success: false, message: (err as Error).message });

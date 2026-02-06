@@ -17,4 +17,15 @@ export interface IGatewayService {
   plantNew(data: { commonName: string; latinName: string; originCountry: string }): Promise<any>;
   changeStrength(data: { plantId: string; percent: number }): Promise<any>;
   harvest(data: { latinName: string; count: number }): Promise<any>;
+
+  // Processing
+  listProcessingPerfumes(): Promise<any>;
+  createProcessingPerfume(data: {
+    name: string;
+    type: string;
+    volume: number;
+    serialNumber?: string;
+    expiresAt: string;
+    status?: string;
+  }): Promise<any>;
 }

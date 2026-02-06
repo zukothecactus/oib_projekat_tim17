@@ -2,12 +2,15 @@ import React, { useMemo, useState, useEffect } from "react";
 import { IUserAPI } from "../api/users/IUserAPI";
 import { IPlantAPI } from "../api/plants/IPlantAPI";
 import { PlantDTO, PlantStatus } from "../models/plants/PlantDTO";
+import { IProcessingAPI } from "../api/processing/IProcessingAPI";
+import { PerfumeDTO, type PerfumeStatus, type PerfumeType } from "../models/processing/PerfumeDTO";
 import { DashboardNavbar } from "../components/dashboard/navbar/Navbar";
 import { useAuth } from "../hooks/useAuthHook";
 
 export type DashboardPageProps = {
   userAPI: IUserAPI;
   plantAPI: IPlantAPI;
+  processingAPI: IProcessingAPI;
 };
 
 type PlantStatusLabel = "Posađena" | "Ubrana" | "Prerađena";
@@ -27,20 +30,6 @@ type InvoiceRow = {
   payment: "Gotovina" | "Uplata na račun" | "Kartično";
   amount: number;
   date: string;
-};
-
-type PerfumeType = "Parfem" | "Kolonjska voda";
-
-type PerfumeStatus = "U izradi" | "Zavrseno";
-
-type PerfumeRow = {
-  id: string;
-  name: string;
-  type: PerfumeType;
-  volume: number;
-  serial: string;
-  expiresAt: string;
-  status: PerfumeStatus;
 };
 
 type Warehouse = {
@@ -101,35 +90,6 @@ const invoicesSeed: InvoiceRow[] = [
   { id: "FR-2025-003", saleType: "Maloprodaja", payment: "Gotovina", amount: 8900, date: "21.10.2025" },
 ];
 
-const perfumesSeed: PerfumeRow[] = [
-  {
-    id: "PF-001",
-    name: "Lavande Noire",
-    type: "Parfem",
-    volume: 150,
-    serial: "PP-2025-001",
-    expiresAt: "22.10.2028",
-    status: "Zavrseno",
-  },
-  {
-    id: "PF-002",
-    name: "Rose Imperial",
-    type: "Kolonjska voda",
-    volume: 250,
-    serial: "PP-2025-002",
-    expiresAt: "10.11.2028",
-    status: "U izradi",
-  },
-  {
-    id: "PF-003",
-    name: "Jardin Jasmin",
-    type: "Parfem",
-    volume: 150,
-    serial: "PP-2025-003",
-    expiresAt: "03.12.2028",
-    status: "Zavrseno",
-  },
-];
 
 const warehousesSeed: Warehouse[] = [
   {
@@ -199,7 +159,7 @@ const packagingSeed: PackagingRow[] = [
   },
 ];
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja">("Pregled");
@@ -239,6 +199,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     { id: "proc-1", type: "INFO", message: "Pokrenuta prerada: Lavande Noire", time: "12:05" },
     { id: "proc-2", type: "INFO", message: "Završena prerada: Rose Imperial", time: "11:52" },
   ]);
+  const [processingPerfumes, setProcessingPerfumes] = useState<PerfumeDTO[]>([]);
+  const [processingLoading, setProcessingLoading] = useState(false);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [processingNotice, setProcessingNotice] = useState<string | null>(null);
 
   
   const filteredInvoices = useMemo(() => {
@@ -283,15 +247,57 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     return "status-yellow";
   };
 
-  const handleProcessingSubmit = (event: React.FormEvent) => {
+  const handleProcessingSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const entry: ProductionLog = {
-      id: `proc-${Date.now()}`,
-      type: "INFO",
-      message: `Zahtev za preradu: ${processingForm.name || "Novi parfem"}`,
-      time: new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
-    };
-    setProcessingLogs((prev) => [entry, ...prev].slice(0, 20));
+    if (!token) {
+      setProcessingError("Niste prijavljeni.");
+      setProcessingNotice(null);
+      return;
+    }
+    if (!processingForm.name.trim() || !processingForm.expiresAt.trim()) {
+      setProcessingError("Popunite naziv i rok trajanja.");
+      setProcessingNotice(null);
+      return;
+    }
+
+    setProcessingLoading(true);
+    setProcessingError(null);
+    setProcessingNotice(null);
+    try {
+      await processingAPI.createPerfume(
+        {
+          name: processingForm.name.trim(),
+          type: processingForm.type,
+          volume: processingForm.volume,
+          serialNumber: processingForm.serial.trim() || undefined,
+          expiresAt: processingForm.expiresAt.trim(),
+          status: processingForm.status,
+        },
+        token
+      );
+      const entry: ProductionLog = {
+        id: `proc-${Date.now()}`,
+        type: "INFO",
+        message: `Zahtev za preradu: ${processingForm.name.trim()}`,
+        time: new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
+      };
+      setProcessingLogs((prev) => [entry, ...prev].slice(0, 20));
+      setProcessingNotice("Parfem je uspešno dodat.");
+      setProcessingForm({
+        name: "",
+        type: "Parfem" as PerfumeType,
+        volume: 150,
+        serial: "",
+        expiresAt: "",
+        status: "U izradi" as PerfumeStatus,
+      });
+      await fetchProcessingPerfumes();
+    } catch (err) {
+      setProcessingError("Neuspešna prerada parfema.");
+      setProcessingNotice(null);
+    } finally {
+      setProcessingLoading(false);
+    }
   };
 
   const packageStatusClass = (status: PackageStatus) => {
@@ -304,6 +310,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
   };
 
   const selectedPackage = packagingSeed.find((pack) => pack.id === selectedPackageId) ?? packagingSeed[0];
+
+  const fetchProcessingPerfumes = async () => {
+    if (!token) return;
+    setProcessingLoading(true);
+    setProcessingError(null);
+    try {
+      const list = await processingAPI.listPerfumes(token);
+      setProcessingPerfumes(list);
+    } catch (err) {
+      setProcessingError("Ne mogu da učitam listu parfema.");
+    } finally {
+      setProcessingLoading(false);
+    }
+  };
 
   const overviewPlants = useMemo<PlantRow[]>(() => {
     if (!productionPlants.length) return plantsSeed;
@@ -483,6 +503,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
       fetchProductionPlants();
     }
   }, [activeTab, token]);
+
+  useEffect(() => {
+    if (activeTab === "Proizvodnja" && productionTab === "Servis prerade") {
+      fetchProcessingPerfumes();
+    }
+  }, [activeTab, productionTab, token]);
 
   return (
     <div className="dashboard-root">
@@ -884,11 +910,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                         </label>
                       </div>
                       <div className="form-actions">
-                        <button className="btn btn-accent" type="submit">
+                        <button className="btn btn-accent" type="submit" disabled={processingLoading}>
                           Pokreni preradu
                         </button>
                       </div>
                     </form>
+
+                    {processingError ? (
+                      <div className="notice error">{processingError}</div>
+                    ) : null}
+                    {processingNotice ? (
+                      <div className="notice success">{processingNotice}</div>
+                    ) : null}
 
                     <div className="table-wrapper">
                       <table className="data-table">
@@ -903,20 +936,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                           </tr>
                         </thead>
                         <tbody>
-                          {perfumesSeed.map((p) => (
-                            <tr key={p.id}>
-                              <td>{p.name}</td>
-                              <td>{p.type}</td>
-                              <td>{p.volume} ml</td>
-                              <td>{p.serial}</td>
-                              <td>{p.expiresAt}</td>
-                              <td>
-                                <span className={`status-chip ${processingStatusClass(p.status)}`}>
-                                  {p.status}
-                                </span>
+                          {processingPerfumes.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="text-muted">
+                                Nema parfema za prikaz.
                               </td>
                             </tr>
-                          ))}
+                          ) : (
+                            processingPerfumes.map((p) => (
+                              <tr key={p.id}>
+                                <td>{p.name}</td>
+                                <td>{p.type}</td>
+                                <td>{p.volume} ml</td>
+                                <td>{p.serialNumber}</td>
+                                <td>{p.expiresAt}</td>
+                                <td>
+                                  <span className={`status-chip ${processingStatusClass(p.status)}`}>
+                                    {p.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
