@@ -61,6 +61,15 @@ type PackageRow = {
   status: PackageStatus;
 };
 
+type CatalogItem = {
+  id: string;
+  name: string;
+  type: PerfumeType;
+  volume: number;
+  price: number;
+  stock: number;
+};
+
 type ProductionLogType = "INFO" | "WARNING" | "ERROR";
 
 type ProductionLog = {
@@ -138,6 +147,13 @@ const packagesSeed: PackageRow[] = [
   { id: "AMB-2025-003", sender: "Centar za pakovanje 2", perfumeCount: 30, warehouse: "Severno skladište", status: "Spakovana" },
   { id: "AMB-2025-004", sender: "Centar za pakovanje 2", perfumeCount: 12, warehouse: "Severno skladište", status: "Spakovana" },
   { id: "AMB-2025-005", sender: "Centar za pakovanje 3", perfumeCount: 20, warehouse: "Južno skladište", status: "Poslata" },
+];
+
+const catalogSeed: CatalogItem[] = [
+  { id: "cat-1", name: "Rosa Mistika", type: "Parfem", volume: 250, price: 12500, stock: 45 },
+  { id: "cat-2", name: "Lavander Noir", type: "Kolonjska voda", volume: 150, price: 8900, stock: 67 },
+  { id: "cat-3", name: "Bergamot Esenc", type: "Parfem", volume: 250, price: 13200, stock: 23 },
+  { id: "cat-4", name: "Jasmin De Nuj", type: "Kolonjska voda", volume: 150, price: 9500, stock: 38 },
 ];
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI }) => {
@@ -969,9 +985,46 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                   </section>
                 </div>
               ) : (
-                <div className="panel panel-empty">
-                  <h2>Servis prodaje</h2>
-                  <p>Ovaj deo je u izradi.</p>
+                <div className="sales-grid">
+                  <section className="panel storage-panel">
+                    <header className="storage-header sales-header-green">
+                      <div className="storage-header-title">Katalog parfema</div>
+                    </header>
+
+                    <div className="catalog-grid">
+                      {catalogSeed.map((item) => (
+                        <article key={item.id} className="catalog-card">
+                          <div className="catalog-top">
+                            <div>
+                              <div className="catalog-name">{item.name}</div>
+                              <div className="catalog-meta">
+                                {item.type} | {item.volume} ml
+                              </div>
+                            </div>
+                            <div className="catalog-icon">▣</div>
+                          </div>
+                          <div className="catalog-price">{item.price.toLocaleString("sr-RS")} RSD</div>
+                          <div className="catalog-stock">Na stanju: {item.stock}</div>
+                          <button className="btn btn-accent catalog-btn">Dodaj u korpu</button>
+                        </article>
+                      ))}
+                    </div>
+
+                    <footer className="panel-footer">
+                      Ukupno proizvoda u katalogu: {catalogSeed.length}
+                    </footer>
+                  </section>
+
+                  <section className="panel storage-panel">
+                    <header className="storage-header sales-header-blue">
+                      <div className="storage-header-title">Korpa (0)</div>
+                    </header>
+
+                    <div className="cart-empty">
+                      <div className="cart-icon">🛒</div>
+                      <div>Korpa je prazna</div>
+                    </div>
+                  </section>
                 </div>
               )}
             </div>
