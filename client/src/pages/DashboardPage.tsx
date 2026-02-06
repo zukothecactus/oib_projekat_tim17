@@ -57,6 +57,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
   const [productionPlants, setProductionPlants] = useState<PlantDTO[]>([]);
   const [productionLoading, setProductionLoading] = useState(false);
   const [productionError, setProductionError] = useState<string | null>(null);
+  const [productionNotice, setProductionNotice] = useState<string | null>(null);
   const [plantForm, setPlantForm] = useState({ commonName: "", latinName: "", originCountry: "" });
   const [harvestForm, setHarvestForm] = useState({ latinName: "", count: 1 });
   const [changeForm, setChangeForm] = useState({ plantId: "", percent: 0 });
@@ -188,23 +189,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     const originCountry = plantForm.originCountry.trim();
     if (!token) {
       setProductionError("Niste prijavljeni.");
+      setProductionNotice(null);
       addProductionLog("ERROR", "Neuspešna akcija: nema tokena.");
       return;
     }
     if (!commonName || !latinName || !originCountry) {
       setProductionError("Popunite sva polja za sadnju.");
+      setProductionNotice(null);
       return;
     }
 
     setProductionLoading(true);
     setProductionError(null);
+    setProductionNotice(null);
     try {
       await plantAPI.plantNew({ commonName, latinName, originCountry }, token);
       addProductionLog("INFO", `Zasađena biljka: ${commonName}`);
+      setProductionNotice("Biljka je uspešno zasađena.");
       setPlantForm({ commonName: "", latinName: "", originCountry: "" });
       await fetchProductionPlants();
     } catch (err) {
       setProductionError("Neuspešno sađenje biljke.");
+      setProductionNotice(null);
       addProductionLog("ERROR", "Greška pri sadnji biljke.");
     } finally {
       setProductionLoading(false);
@@ -215,22 +221,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     event.preventDefault();
     if (!token) {
       setProductionError("Niste prijavljeni.");
+      setProductionNotice(null);
       addProductionLog("ERROR", "Neuspešna akcija: nema tokena.");
       return;
     }
     if (!harvestForm.latinName.trim() || harvestForm.count < 1) {
       setProductionError("Izaberite biljku i unesite količinu.");
+      setProductionNotice(null);
       return;
     }
 
     setProductionLoading(true);
     setProductionError(null);
+    setProductionNotice(null);
     try {
       const harvested = await plantAPI.harvest(harvestForm.latinName, harvestForm.count, token);
       addProductionLog("INFO", `Ubrano biljaka: ${harvested.length}`);
       await fetchProductionPlants();
     } catch (err) {
       setProductionError("Neuspešna berba biljaka.");
+      setProductionNotice(null);
       addProductionLog("ERROR", "Greška pri berbi biljaka.");
     } finally {
       setProductionLoading(false);
@@ -241,22 +251,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     event.preventDefault();
     if (!token) {
       setProductionError("Niste prijavljeni.");
+      setProductionNotice(null);
       addProductionLog("ERROR", "Neuspešna akcija: nema tokena.");
       return;
     }
     if (!changeForm.plantId.trim()) {
       setProductionError("Izaberite biljku.");
+      setProductionNotice(null);
       return;
     }
 
     setProductionLoading(true);
     setProductionError(null);
+    setProductionNotice(null);
     try {
       await plantAPI.changeStrength(changeForm.plantId, changeForm.percent, token);
       addProductionLog("INFO", `Promenjena jačina: ${changeForm.percent}%`);
+      setProductionNotice("Jačina je uspešno promenjena.");
       await fetchProductionPlants();
     } catch (err) {
       setProductionError("Neuspešna promena jačine.");
+      setProductionNotice(null);
       addProductionLog("ERROR", "Greška pri promeni jačine.");
     } finally {
       setProductionLoading(false);
@@ -534,6 +549,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
 
                     {productionError ? (
                       <div className="notice error">{productionError}</div>
+                    ) : null}
+                    {productionNotice ? (
+                      <div className="notice success">{productionNotice}</div>
                     ) : null}
 
                     <div className="table-wrapper">

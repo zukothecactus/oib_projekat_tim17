@@ -873,6 +873,12 @@ hr {
   border: 1px solid rgba(196, 43, 28, 0.35);
 }
 
+.notice.success {
+  background: rgba(16, 124, 16, 0.15);
+  color: #76d275;
+  border: 1px solid rgba(16, 124, 16, 0.35);
+}
+
 .log-list {
   display: flex;
   flex-direction: column;
