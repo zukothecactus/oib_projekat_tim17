@@ -33,7 +33,7 @@ export const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ userAPI }) => 
 
   const handleLogout = () => {
     logout();
-    navigate("/auth");
+    navigate("/");
   };
 
   return (

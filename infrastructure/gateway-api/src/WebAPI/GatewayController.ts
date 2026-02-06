@@ -48,7 +48,8 @@ export class GatewayController {
 
   private async getUserById(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id, 10);
+      const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const id = parseInt(idParam, 10);
       if (!req.user || req.user.id !== id) {
         res.status(401).json({ message: "You can only access your own data!" });
         return;

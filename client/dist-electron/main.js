@@ -1,10 +1,10 @@
 import { app, BrowserWindow, Menu, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = path.dirname(__filename$1);
 let win = null;
-const preloadPath = path.join(__dirname, "../dist-electron/preload.mjs");
+const preloadPath = path.join(__dirname$1, "../src/preload.mjs");
 function createWindow() {
   win = new BrowserWindow({
     width: 1e3,
@@ -25,7 +25,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    win.loadFile(path.join(__dirname, "../dist/index.html"));
+    win.loadFile(path.join(__dirname$1, "../dist/index.html"));
   }
   win?.webContents.openDevTools();
   ipcMain.on("window:minimize", () => win?.minimize());
