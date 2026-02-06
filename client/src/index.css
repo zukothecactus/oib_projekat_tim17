@@ -879,6 +879,114 @@ hr {
   border: 1px solid rgba(16, 124, 16, 0.35);
 }
 
+/* Storage Service */
+.storage-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.storage-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--win11-divider);
+  border-radius: var(--win11-radius-medium);
+  background: var(--win11-mica-bg-alt);
+}
+
+.storage-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr;
+  gap: 16px;
+}
+
+.storage-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.storage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: #ffffff;
+}
+
+.storage-header-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.storage-header-orange {
+  background: linear-gradient(90deg, #f28b30, #e56e19);
+}
+
+.storage-header-purple {
+  background: linear-gradient(90deg, #8b5cf6, #6d28d9);
+}
+
+.storage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.warehouse-card {
+  border: 1px solid var(--win11-divider);
+  border-radius: var(--win11-radius-medium);
+  padding: 12px;
+  background: var(--win11-card-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.warehouse-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.warehouse-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--win11-text-primary);
+}
+
+.warehouse-address {
+  font-size: 12px;
+  color: var(--win11-text-tertiary);
+}
+
+.warehouse-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+.warehouse-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--win11-text-secondary);
+}
+
+.warehouse-percent {
+  font-size: 11px;
+  color: var(--win11-text-tertiary);
+  text-align: right;
+}
+
 .log-list {
   display: flex;
   flex-direction: column;
@@ -924,6 +1032,10 @@ hr {
   }
 
   .production-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-grid {
     grid-template-columns: 1fr;
   }
 }

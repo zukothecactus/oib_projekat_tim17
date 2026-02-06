@@ -43,6 +43,24 @@ type PerfumeRow = {
   status: PerfumeStatus;
 };
 
+type Warehouse = {
+  id: string;
+  name: string;
+  address: string;
+  capacity: number;
+  used: number;
+};
+
+type PackageStatus = "Spakovana" | "Poslata";
+
+type PackageRow = {
+  id: string;
+  sender: string;
+  perfumeCount: number;
+  warehouse: string;
+  status: PackageStatus;
+};
+
 type ProductionLogType = "INFO" | "WARNING" | "ERROR";
 
 type ProductionLog = {
@@ -90,6 +108,38 @@ const perfumesSeed: PerfumeRow[] = [
   },
 ];
 
+const warehousesSeed: Warehouse[] = [
+  {
+    id: "wh-1",
+    name: "Centralno skladište",
+    address: "Pariz, Rue de la Paix 45",
+    capacity: 100,
+    used: 67,
+  },
+  {
+    id: "wh-2",
+    name: "Severno skladište",
+    address: "Pariz, Avenue Foch 12",
+    capacity: 75,
+    used: 45,
+  },
+  {
+    id: "wh-3",
+    name: "Južno skladište",
+    address: "Pariz, Blvd. Saint-Germain 89",
+    capacity: 50,
+    used: 28,
+  },
+];
+
+const packagesSeed: PackageRow[] = [
+  { id: "AMB-2025-001", sender: "Centar za pakovanje 1", perfumeCount: 24, warehouse: "Centralno skladište", status: "Spakovana" },
+  { id: "AMB-2025-002", sender: "Centar za pakovanje 1", perfumeCount: 18, warehouse: "Centralno skladište", status: "Poslata" },
+  { id: "AMB-2025-003", sender: "Centar za pakovanje 2", perfumeCount: 30, warehouse: "Severno skladište", status: "Spakovana" },
+  { id: "AMB-2025-004", sender: "Centar za pakovanje 2", perfumeCount: 12, warehouse: "Severno skladište", status: "Spakovana" },
+  { id: "AMB-2025-005", sender: "Centar za pakovanje 3", perfumeCount: 20, warehouse: "Južno skladište", status: "Poslata" },
+];
+
 export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token } = useAuth();
@@ -98,6 +148,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
   const [invoiceQuery, setInvoiceQuery] = useState("");
   const [productionTab, setProductionTab] = useState<"Servis proizvodnje" | "Servis prerade">("Servis proizvodnje");
   const [productionAction, setProductionAction] = useState<"plant" | "harvest" | "change-strength">("plant");
+  const [storageTab, setStorageTab] = useState<"Servis skladištenja" | "Servis prodaje">("Servis skladištenja");
   const [productionPlants, setProductionPlants] = useState<PlantDTO[]>([]);
   const [productionLoading, setProductionLoading] = useState(false);
   const [productionError, setProductionError] = useState<string | null>(null);
@@ -175,6 +226,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
       time: new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
     };
     setProcessingLogs((prev) => [entry, ...prev].slice(0, 20));
+  };
+
+  const packageStatusClass = (status: PackageStatus) => {
+    return status === "Poslata" ? "status-purple" : "status-green";
+  };
+
+  const warehouseFillPercent = (warehouse: Warehouse) => {
+    if (!warehouse.capacity) return 0;
+    return Math.round((warehouse.used / warehouse.capacity) * 100);
   };
 
   const overviewPlants = useMemo<PlantRow[]>(() => {
@@ -810,6 +870,108 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                       Ukupno akcija: {processingLogs.length}
                     </footer>
                   </section>
+                </div>
+              )}
+            </div>
+          ) : activeTab === "Skladištenje" ? (
+            <div className="storage-shell">
+              <div className="storage-tabs">
+                {(["Servis skladištenja", "Servis prodaje"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    className={`tab-btn ${storageTab === tab ? "active" : ""}`}
+                    onClick={() => setStorageTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              {storageTab === "Servis skladištenja" ? (
+                <div className="storage-grid">
+                  <section className="panel storage-panel">
+                    <header className="storage-header storage-header-orange">
+                      <div className="storage-header-title">Skladišta</div>
+                    </header>
+
+                    <div className="storage-list">
+                      {warehousesSeed.map((warehouse) => (
+                        <article key={warehouse.id} className="warehouse-card">
+                          <div className="warehouse-title">
+                            <div>
+                              <div className="warehouse-name">{warehouse.name}</div>
+                              <div className="warehouse-address">{warehouse.address}</div>
+                            </div>
+                            <div className="warehouse-icon">▣</div>
+                          </div>
+
+                          <div className="warehouse-meta">
+                            <span>Kapacitet:</span>
+                            <strong>
+                              {warehouse.used} / {warehouse.capacity}
+                            </strong>
+                          </div>
+
+                          <div className="progress">
+                            <div
+                              className="progress-bar"
+                              style={{ width: `${warehouseFillPercent(warehouse)}%` }}
+                            ></div>
+                          </div>
+                          <div className="warehouse-percent">{warehouseFillPercent(warehouse)}% popunjeno</div>
+                        </article>
+                      ))}
+                    </div>
+
+                    <footer className="panel-footer">
+                      Ukupno skladišta: {warehousesSeed.length}
+                    </footer>
+                  </section>
+
+                  <section className="panel storage-panel">
+                    <header className="storage-header storage-header-purple">
+                      <div className="storage-header-title">Ambalaže u skladištu</div>
+                      <button className="btn btn-ghost">Pošalji</button>
+                    </header>
+
+                    <div className="table-wrapper">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>ID ambalaže</th>
+                            <th>Pošiljalac</th>
+                            <th>Broj parfema</th>
+                            <th>Skladište</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {packagesSeed.map((pack) => (
+                            <tr key={pack.id}>
+                              <td>{pack.id}</td>
+                              <td className="text-muted">{pack.sender}</td>
+                              <td>{pack.perfumeCount}</td>
+                              <td>{pack.warehouse}</td>
+                              <td>
+                                <span className={`status-chip ${packageStatusClass(pack.status)}`}>
+                                  {pack.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <footer className="panel-footer">
+                      Ukupno ambalaža: {packagesSeed.length}
+                    </footer>
+                  </section>
+                </div>
+              ) : (
+                <div className="panel panel-empty">
+                  <h2>Servis prodaje</h2>
+                  <p>Ovaj deo je u izradi.</p>
                 </div>
               )}
             </div>
