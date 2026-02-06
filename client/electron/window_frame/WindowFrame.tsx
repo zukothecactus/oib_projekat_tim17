@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './WindowFrame.css'
 
 export function TitleBar() {
+  const appIconUrl = `${import.meta.env.BASE_URL}icon.png`
   const [isMaximized, setIsMaximized] = useState(false)
   const [ready, setReady] = useState(false)
 
@@ -28,7 +29,7 @@ export function TitleBar() {
     <div className="title-bar">
       {/* App icon */}
       <div className="title-bar-icon">
-        <img style={{marginTop: -5 }} src='/icon.png' width="20" height="20" />
+        <img style={{ marginTop: -5 }} src={appIconUrl} width="20" height="20" />
       </div>
 
       {/* Centered title */}

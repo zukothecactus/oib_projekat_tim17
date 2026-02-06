@@ -18,37 +18,45 @@ export class PlantAPI implements IPlantAPI {
     return { Authorization: `Bearer ${token}` };
   }
 
-  async getAllPlants(token: string): Promise<PlantDTO[]> {
-    const response: AxiosResponse<PlantDTO[]> = await this.axiosInstance.get("/plants", {
-      headers: this.getAuthHeaders(token),
-    });
-    return response.data;
+  async listPlants(token: string): Promise<PlantDTO[]> {
+    const response: AxiosResponse<{ list: PlantDTO[] }> = await this.axiosInstance.get(
+      "/production/plants",
+      { headers: this.getAuthHeaders(token) }
+    );
+    return response.data.list ?? [];
   }
 
-  async getPlantById(id: number, token: string): Promise<PlantDTO> {
-    const response: AxiosResponse<PlantDTO> = await this.axiosInstance.get(`/plants/${id}`, {
-      headers: this.getAuthHeaders(token),
-    });
-    return response.data;
+  async plantNew(
+    data: { commonName: string; latinName: string; originCountry: string },
+    token: string
+  ): Promise<PlantDTO> {
+    const response: AxiosResponse<{ plant: PlantDTO }> = await this.axiosInstance.post(
+      "/production/plant",
+      data,
+      { headers: this.getAuthHeaders(token) }
+    );
+    return response.data.plant;
   }
 
-  async createPlant(plant: PlantDTO, token: string): Promise<PlantDTO> {
-    const response: AxiosResponse<PlantDTO> = await this.axiosInstance.post("/plants", plant, {
-      headers: this.getAuthHeaders(token),
-    });
-    return response.data;
+  async changeStrength(
+    plantId: string,
+    percent: number,
+    token: string
+  ): Promise<PlantDTO> {
+    const response: AxiosResponse<{ plant: PlantDTO }> = await this.axiosInstance.post(
+      "/production/change-strength",
+      { plantId, percent },
+      { headers: this.getAuthHeaders(token) }
+    );
+    return response.data.plant;
   }
 
-  async updatePlant(id: number, plant: PlantDTO, token: string): Promise<PlantDTO> {
-    const response: AxiosResponse<PlantDTO> = await this.axiosInstance.put(`/plants/${id}`, plant, {
-      headers: this.getAuthHeaders(token),
-    });
-    return response.data;
-  }
-
-  async deletePlant(id: number, token: string): Promise<void> {
-    await this.axiosInstance.delete(`/plants/${id}`, {
-      headers: this.getAuthHeaders(token),
-    });
+  async harvest(latinName: string, count: number, token: string): Promise<PlantDTO[]> {
+    const response: AxiosResponse<{ harvested: PlantDTO[] }> = await this.axiosInstance.post(
+      "/production/harvest",
+      { latinName, count },
+      { headers: this.getAuthHeaders(token) }
+    );
+    return response.data.harvested ?? [];
   }
 }

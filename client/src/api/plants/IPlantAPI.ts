@@ -1,9 +1,19 @@
 import { PlantDTO } from "../../models/plants/PlantDTO";
 
 export interface IPlantAPI {
-  getAllPlants(token: string): Promise<PlantDTO[]>;
-  getPlantById(id: number, token: string): Promise<PlantDTO>;
-  createPlant(plant: PlantDTO, token: string): Promise<PlantDTO>;
-  updatePlant(id: number, plant: PlantDTO, token: string): Promise<PlantDTO>;
-  deletePlant(id: number, token: string): Promise<void>;
+  listPlants(token: string): Promise<PlantDTO[]>;
+  plantNew(
+    data: { commonName: string; latinName: string; originCountry: string },
+    token: string
+  ): Promise<PlantDTO>;
+  changeStrength(
+    plantId: string,
+    percent: number,
+    token: string
+  ): Promise<PlantDTO>;
+  harvest(
+    latinName: string,
+    count: number,
+    token: string
+  ): Promise<PlantDTO[]>;
 }

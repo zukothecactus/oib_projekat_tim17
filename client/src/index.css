@@ -654,6 +654,9 @@ hr {
 .dashboard-window {
   width: min(1400px, 96vw);
   margin: 0 auto;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-titlebar {
@@ -666,6 +669,7 @@ hr {
   padding: 10px 16px;
   border-bottom: 1px solid var(--win11-divider);
   background: var(--win11-mica-bg);
+  flex: 0 0 auto;
 }
 
 .tab-btn {
@@ -689,6 +693,9 @@ hr {
 
 .dashboard-content {
   padding: 16px;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .dashboard-grid {
@@ -799,8 +806,118 @@ hr {
   padding-top: 10px;
 }
 
+/* Production Service */
+.production-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.production-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--win11-divider);
+  border-radius: var(--win11-radius-medium);
+  background: var(--win11-mica-bg-alt);
+}
+
+.production-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.action-tabs {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.production-form {
+  border: 1px solid var(--win11-divider);
+  border-radius: var(--win11-radius-medium);
+  padding: 12px;
+  background: var(--win11-mica-bg-alt);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--win11-text-secondary);
+}
+
+.form-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.notice {
+  padding: 8px 10px;
+  border-radius: var(--win11-radius-small);
+  font-size: 12px;
+}
+
+.notice.error {
+  background: rgba(196, 43, 28, 0.15);
+  color: #ffb4ad;
+  border: 1px solid rgba(196, 43, 28, 0.35);
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+.log-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--win11-radius-small);
+  border: 1px solid var(--win11-divider);
+  background: var(--win11-card-bg);
+}
+
+.log-item.log-info {
+  border-left: 3px solid rgba(96, 205, 255, 0.8);
+}
+
+.log-item.log-warning {
+  border-left: 3px solid rgba(255, 193, 7, 0.8);
+}
+
+.log-item.log-error {
+  border-left: 3px solid rgba(196, 43, 28, 0.8);
+}
+
+.log-meta {
+  font-size: 11px;
+  color: var(--win11-text-tertiary);
+}
+
+.log-message {
+  font-size: 12px;
+  color: var(--win11-text-primary);
+}
+
 @media (max-width: 1024px) {
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .production-grid {
     grid-template-columns: 1fr;
   }
 }

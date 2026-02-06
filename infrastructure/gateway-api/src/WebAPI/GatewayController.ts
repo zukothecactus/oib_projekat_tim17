@@ -21,6 +21,12 @@ export class GatewayController {
     // Users
     this.router.get("/users", authenticate, authorize("admin"), this.getAllUsers.bind(this));
     this.router.get("/users/:id", authenticate, authorize("admin", "seller"), this.getUserById.bind(this));
+
+    // Production
+    this.router.get("/production/plants", authenticate, authorize("admin", "seller"), this.listProductionPlants.bind(this));
+    this.router.post("/production/plant", authenticate, authorize("admin", "seller"), this.plantNew.bind(this));
+    this.router.post("/production/change-strength", authenticate, authorize("admin", "seller"), this.changeStrength.bind(this));
+    this.router.post("/production/harvest", authenticate, authorize("admin", "seller"), this.harvest.bind(this));
   }
 
   // Auth
@@ -59,6 +65,43 @@ export class GatewayController {
       res.status(200).json(user);
     } catch (err) {
       res.status(404).json({ message: (err as Error).message });
+    }
+  }
+
+  // Production
+  private async listProductionPlants(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listProductionPlants();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async plantNew(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.plantNew(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async changeStrength(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.changeStrength(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async harvest(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.harvest(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
     }
   }
 

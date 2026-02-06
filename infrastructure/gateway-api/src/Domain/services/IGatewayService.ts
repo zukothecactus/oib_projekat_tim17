@@ -11,4 +11,10 @@ export interface IGatewayService {
   // Users
   getAllUsers(): Promise<UserDTO[]>;
   getUserById(id: number): Promise<UserDTO>;
+
+  // Production
+  listProductionPlants(): Promise<any>;
+  plantNew(data: { commonName: string; latinName: string; originCountry: string }): Promise<any>;
+  changeStrength(data: { plantId: string; percent: number }): Promise<any>;
+  harvest(data: { latinName: string; count: number }): Promise<any>;
 }

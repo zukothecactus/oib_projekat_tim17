@@ -8,6 +8,7 @@ type AuthPageProps = {
 };
 
 export const AuthPage: React.FC<AuthPageProps> = ({ authAPI }) => {
+  const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
 
   return (
@@ -15,7 +16,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authAPI }) => {
       <div className="window" style={{ width: "500px", maxWidth: "90%" }}>
         <div className="titlebar">
           <div className="titlebar-icon">
-            <img style={{marginTop: -5 }} src='/icon.png' width="20" height="20" />
+            <img style={{ marginTop: -5 }} src={appIconUrl} width="20" height="20" />
           </div>
           <span className="titlebar-title">Authentication</span>
         </div>
