@@ -70,6 +70,20 @@ type CatalogItem = {
   stock: number;
 };
 
+type PackageItem = {
+  id: string;
+  perfumeName: string;
+  volume: number;
+  count: number;
+};
+
+type PackagingRow = {
+  id: string;
+  warehouse: string;
+  status: PackageStatus;
+  items: PackageItem[];
+};
+
 type ProductionLogType = "INFO" | "WARNING" | "ERROR";
 
 type ProductionLog = {
@@ -156,6 +170,35 @@ const catalogSeed: CatalogItem[] = [
   { id: "cat-4", name: "Jasmin De Nuj", type: "Kolonjska voda", volume: 150, price: 9500, stock: 38 },
 ];
 
+const packagingSeed: PackagingRow[] = [
+  {
+    id: "AMB-2025-101",
+    warehouse: "Centralno skladište",
+    status: "Spakovana",
+    items: [
+      { id: "pkg-1", perfumeName: "Rosa Mistika", volume: 250, count: 12 },
+      { id: "pkg-2", perfumeName: "Lavander Noir", volume: 150, count: 18 },
+    ],
+  },
+  {
+    id: "AMB-2025-102",
+    warehouse: "Severno skladište",
+    status: "Poslata",
+    items: [
+      { id: "pkg-3", perfumeName: "Bergamot Esenc", volume: 250, count: 10 },
+      { id: "pkg-4", perfumeName: "Jasmin De Nuj", volume: 150, count: 16 },
+    ],
+  },
+  {
+    id: "AMB-2025-103",
+    warehouse: "Južno skladište",
+    status: "Spakovana",
+    items: [
+      { id: "pkg-5", perfumeName: "Lavander Noir", volume: 150, count: 20 },
+    ],
+  },
+];
+
 export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token } = useAuth();
@@ -165,6 +208,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
   const [productionTab, setProductionTab] = useState<"Servis proizvodnje" | "Servis prerade">("Servis proizvodnje");
   const [productionAction, setProductionAction] = useState<"plant" | "harvest" | "change-strength">("plant");
   const [storageTab, setStorageTab] = useState<"Servis skladištenja" | "Servis prodaje">("Servis skladištenja");
+  const [packagingForm, setPackagingForm] = useState({
+    perfumeName: "",
+    volume: 150,
+    count: 1,
+    warehouse: "Centralno skladište",
+  });
+  const [selectedPackageId, setSelectedPackageId] = useState(packagingSeed[0]?.id ?? "");
   const [productionPlants, setProductionPlants] = useState<PlantDTO[]>([]);
   const [productionLoading, setProductionLoading] = useState(false);
   const [productionError, setProductionError] = useState<string | null>(null);
@@ -252,6 +302,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
     if (!warehouse.capacity) return 0;
     return Math.round((warehouse.used / warehouse.capacity) * 100);
   };
+
+  const selectedPackage = packagingSeed.find((pack) => pack.id === selectedPackageId) ?? packagingSeed[0];
 
   const overviewPlants = useMemo<PlantRow[]>(() => {
     if (!productionPlants.length) return plantsSeed;
@@ -1027,6 +1079,126 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI 
                   </section>
                 </div>
               )}
+            </div>
+          ) : activeTab === "Pakovanje" ? (
+            <div className="packaging-grid">
+              <section className="panel packaging-panel">
+                <header className="storage-header packaging-header">
+                  <div className="storage-header-title">Pakovanje parfema</div>
+                </header>
+
+                <form className="production-form" onSubmit={(e) => e.preventDefault()}>
+                  <div className="form-grid">
+                    <label>
+                      Parfem
+                      <input
+                        type="text"
+                        value={packagingForm.perfumeName}
+                        onChange={(e) => setPackagingForm({ ...packagingForm, perfumeName: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Zapremina (ml)
+                      <select
+                        value={packagingForm.volume}
+                        onChange={(e) => setPackagingForm({ ...packagingForm, volume: Number(e.target.value) })}
+                      >
+                        <option value={150}>150</option>
+                        <option value={250}>250</option>
+                      </select>
+                    </label>
+                    <label>
+                      Kolicina
+                      <input
+                        type="number"
+                        min={1}
+                        value={packagingForm.count}
+                        onChange={(e) => setPackagingForm({ ...packagingForm, count: Number(e.target.value) })}
+                      />
+                    </label>
+                    <label>
+                      Skladiste
+                      <select
+                        value={packagingForm.warehouse}
+                        onChange={(e) => setPackagingForm({ ...packagingForm, warehouse: e.target.value })}
+                      >
+                        <option value="Centralno skladište">Centralno skladište</option>
+                        <option value="Severno skladište">Severno skladište</option>
+                        <option value="Južno skladište">Južno skladište</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="form-actions">
+                    <button className="btn btn-accent" type="submit">Spakuj</button>
+                  </div>
+                </form>
+
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID ambalaze</th>
+                        <th>Skladiste</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {packagingSeed.map((pack) => (
+                        <tr key={pack.id}>
+                          <td>{pack.id}</td>
+                          <td>{pack.warehouse}</td>
+                          <td>
+                            <span className={`status-chip ${packageStatusClass(pack.status)}`}>
+                              {pack.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className={`btn btn-ghost ${selectedPackageId === pack.id ? "selected-btn" : ""}`}
+                              onClick={() => setSelectedPackageId(pack.id)}
+                            >
+                              Detalji
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <footer className="panel-footer">
+                  Ukupno ambalaza: {packagingSeed.length}
+                </footer>
+              </section>
+
+              <section className="panel packaging-panel">
+                <header className="storage-header packaging-header-alt">
+                  <div className="storage-header-title">Sadrzaj ambalaze</div>
+                  <button className="btn btn-ghost">Posalji u skladiste</button>
+                </header>
+
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Parfem</th>
+                        <th>Zapremina</th>
+                        <th>Kolicina</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPackage?.items.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.perfumeName}</td>
+                          <td>{item.volume} ml</td>
+                          <td>{item.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           ) : (
             <div className="panel panel-empty">

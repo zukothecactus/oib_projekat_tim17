@@ -1075,6 +1075,31 @@ hr {
   font-size: 36px;
 }
 
+/* Packaging Service */
+.packaging-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 16px;
+}
+
+.packaging-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.packaging-header {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.packaging-header-alt {
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+}
+
+.selected-btn {
+  border-color: var(--win11-accent);
+  color: var(--win11-accent);
+}
+
 .log-list {
   display: flex;
   flex-direction: column;
@@ -1132,6 +1157,10 @@ hr {
   }
 
   .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .packaging-grid {
     grid-template-columns: 1fr;
   }
 }
