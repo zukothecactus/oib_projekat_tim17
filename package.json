@@ -1,6 +1,23 @@
 {
+  "name": "oib-projekat-tim17",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "db:create": "mysql -u root -p < create_databases.sql",
+    "start:client": "cd client && npm run dev",
+    "start:gateway": "cd infrastructure/gateway-api && npm start",
+    "start:auth": "cd infrastructure/microservices/auth-microservice && npm start",
+    "start:user": "cd infrastructure/microservices/user-microservice && npm start",
+    "start:production": "cd infrastructure/microservices/production-microservice && npm start",
+    "start:processing": "cd infrastructure/microservices/processing-microservice && npm start",
+    "dev:client": "npm run start:client",
+    "dev:infrastructure": "concurrently \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\"",
+    "dev:all": "concurrently \"npm run start:client\" \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\"",
+    "clean-dev": "rimraf %APPDATA%/client"
+  },
   "devDependencies": {
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6"
+    "@types/express": "^5.0.6",
+    "concurrently": "^9.1.2"
   }
 }

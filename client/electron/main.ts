@@ -12,7 +12,7 @@ const preloadPath = path.join(__dirname, '../dist-electron/preload.mjs')
 function createWindow() {
   win = new BrowserWindow({
     width: 1000,
-    height: 700,
+    height: 1000,
     minWidth: 800,
     minHeight: 600,
     fullscreen: false,
