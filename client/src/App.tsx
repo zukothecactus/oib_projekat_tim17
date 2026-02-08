@@ -10,11 +10,14 @@ import { PlantAPI } from "./api/plants/PlantAPI";
 import { IPlantAPI } from "./api/plants/IPlantAPI";
 import { ProcessingAPI } from "./api/processing/ProcessingAPI";
 import { IProcessingAPI } from "./api/processing/IProcessingAPI";
+import { AuditAPI } from "./api/audit/AuditAPI";
+import { IAuditAPI } from "./api/audit/IAuditAPI";
 
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
 const plant_api: IPlantAPI = new PlantAPI();
 const processing_api: IProcessingAPI = new ProcessingAPI();
+const audit_api: IAuditAPI = new AuditAPI();
 
 function App() {
   return (
@@ -23,8 +26,8 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute requiredRole="admin,seller">
-              <DashboardPage userAPI={user_api} plantAPI={plant_api} processingAPI={processing_api} />
+            <ProtectedRoute requiredRole="admin,seller,sales_manager">
+              <DashboardPage userAPI={user_api} plantAPI={plant_api} processingAPI={processing_api} auditAPI={audit_api} />
             </ProtectedRoute>
           }
         />

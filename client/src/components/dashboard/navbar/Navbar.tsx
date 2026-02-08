@@ -18,10 +18,16 @@ export const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ userAPI }) => 
     const fetchUser = async () => {
       if (authUser?.id) {
         try {
-          const userData = await userAPI.getUserById(token ?? "", authUser.id, );
+          const userData = await userAPI.getUserById(token ?? "", authUser.id);
           setUser(userData);
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to fetch user:", error);
+          // If the user no longer exists or token is invalid, force logout
+          if (error?.response?.status === 404 || error?.response?.status === 401) {
+            logout();
+            navigate("/");
+            return;
+          }
         } finally {
           setIsLoading(false);
         }
@@ -71,17 +77,17 @@ export const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ userAPI }) => 
                   color: "#000",
                 }}
               >
-                {user.username.charAt(0).toUpperCase()}
+                {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
               </div>
             )}
 
             {/* User Info */}
             <div className="flex flex-col" style={{ gap: 0 }}>
               <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--win11-text-primary)" }}>
-                {user.email}
+                {user.firstName} {user.lastName}
               </span>
               <span style={{ fontSize: "11px", color: "var(--win11-text-tertiary)" }}>
-                {user.role}
+                {user.role} · {user.email}
               </span>
             </div>
 

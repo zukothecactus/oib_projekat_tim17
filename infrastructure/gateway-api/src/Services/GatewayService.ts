@@ -10,12 +10,14 @@ export class GatewayService implements IGatewayService {
   private readonly userClient: AxiosInstance;
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
+  private readonly auditClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
     const userBaseURL = process.env.USER_SERVICE_API;
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
+    const auditBaseURL = process.env.AUDIT_SERVICE_API;
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -40,6 +42,12 @@ export class GatewayService implements IGatewayService {
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
     });
+
+    this.auditClient = axios.create({
+      baseURL: auditBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
   }
 
   // Auth microservice
@@ -47,8 +55,11 @@ export class GatewayService implements IGatewayService {
     try {
       const response = await this.authClient.post<AuthResponseType>("/auth/login", data);
       return response.data;
-    } catch {
-      return { authenificated: false };
+    } catch (error: any) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      return { success: false, message: "Auth service unavailable" };
     }
   }
 
@@ -56,8 +67,11 @@ export class GatewayService implements IGatewayService {
     try {
       const response = await this.authClient.post<AuthResponseType>("/auth/register", data);
       return response.data;
-    } catch {
-      return { authenificated: false };
+    } catch (error: any) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      return { success: false, message: "Auth service unavailable" };
     }
   }
 
@@ -69,6 +83,23 @@ export class GatewayService implements IGatewayService {
 
   async getUserById(id: number): Promise<UserDTO> {
     const response = await this.userClient.get<UserDTO>(`/users/${id}`);
+    return response.data;
+  }
+
+  async updateUser(id: number, data: any): Promise<UserDTO> {
+    const response = await this.userClient.put<UserDTO>(`/users/${id}`, data);
+    return response.data;
+  }
+
+  async deleteUser(id: number): Promise<any> {
+    const response = await this.userClient.delete(`/users/${id}`);
+    return response.data;
+  }
+
+  async searchUsers(query: string): Promise<UserDTO[]> {
+    const response = await this.userClient.get<UserDTO[]>(`/users/search`, {
+      params: { q: query },
+    });
     return response.data;
   }
 
@@ -108,6 +139,37 @@ export class GatewayService implements IGatewayService {
     status?: string;
   }): Promise<any> {
     const response = await this.processingClient.post("/processing/perfumes", data);
+    return response.data;
+  }
+
+  // Audit microservice
+  async getAllAuditLogs(): Promise<any[]> {
+    const response = await this.auditClient.get("/audit/logs");
+    return response.data;
+  }
+
+  async getAuditLogById(id: string): Promise<any> {
+    const response = await this.auditClient.get(`/audit/logs/${id}`);
+    return response.data;
+  }
+
+  async createAuditLog(data: { type: string; description: string }): Promise<any> {
+    const response = await this.auditClient.post("/audit/logs", data);
+    return response.data;
+  }
+
+  async updateAuditLog(id: string, data: { type?: string; description?: string }): Promise<any> {
+    const response = await this.auditClient.put(`/audit/logs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteAuditLog(id: string): Promise<any> {
+    const response = await this.auditClient.delete(`/audit/logs/${id}`);
+    return response.data;
+  }
+
+  async searchAuditLogs(query: { type?: string; keyword?: string; dateFrom?: string; dateTo?: string }): Promise<any[]> {
+    const response = await this.auditClient.get("/audit/logs/search", { params: query });
     return response.data;
   }
 }
