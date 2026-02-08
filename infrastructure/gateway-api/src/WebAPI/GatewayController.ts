@@ -239,6 +239,12 @@ export class GatewayController {
       const type = req.query.type as string;
       const count = parseInt(req.query.count as string, 10);
       const result = await this.gatewayService.getAvailablePerfumes(type, count);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
   // Storage
   private async sendToSales(req: Request, res: Response): Promise<void> {
     try {
@@ -298,6 +304,12 @@ export class GatewayController {
   private async listPackages(req: Request, res: Response): Promise<void> {
     try {
       const result = await this.gatewayService.listPackages();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
   private async getWarehousePackages(req: Request, res: Response): Promise<void> {
     try {
       const userRole = req.user?.role ?? "";
@@ -347,6 +359,9 @@ export class GatewayController {
       const message = axiosErr?.response?.data?.message ?? (err as Error).message;
       const status = axiosErr?.response?.status ?? 500;
       res.status(status).json({ success: false, message });
+    }
+  }
+
   private async getSalesInvoiceById(req: Request, res: Response): Promise<void> {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

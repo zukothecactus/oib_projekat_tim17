@@ -196,6 +196,10 @@ export class GatewayService implements IGatewayService {
   async getAvailablePerfumes(type: string, count: number): Promise<any> {
     const response = await this.processingClient.get("/processing/perfumes/available", {
       params: { type, count },
+    });
+    return response.data;
+  }
+
   // Storage microservice
   async sendToSales(count: number, userRole: string): Promise<any> {
     const response = await this.storageClient.post("/storage/send-to-sales", { count }, {
@@ -236,6 +240,9 @@ export class GatewayService implements IGatewayService {
 
   async getPackageById(id: string): Promise<any> {
     const response = await this.packagingClient.get(`/packaging/packages/${id}`);
+    return response.data;
+  }
+
   async getWarehousePackages(warehouseId: string, userRole: string): Promise<any> {
     const response = await this.storageClient.get(`/storage/warehouses/${warehouseId}/packages`, {
       headers: { "X-User-Role": userRole },
