@@ -8,6 +8,9 @@ import { IStorageAPI } from "../api/storage/IStorageAPI";
 import { WarehouseDTO } from "../models/storage/WarehouseDTO";
 import { StoredPackageDTO } from "../models/storage/StoredPackageDTO";
 import { DashboardNavbar } from "../components/dashboard/navbar/Navbar";
+import { UserManagement } from "../components/dashboard/users/UserManagement";
+import { AuditLogViewer } from "../components/dashboard/audit/AuditLogViewer";
+import { IAuditAPI } from "../api/audit/IAuditAPI";
 import { useAuth } from "../hooks/useAuthHook";
 
 export type DashboardPageProps = {
@@ -15,6 +18,7 @@ export type DashboardPageProps = {
   plantAPI: IPlantAPI;
   processingAPI: IProcessingAPI;
   storageAPI: IStorageAPI;
+  auditAPI: IAuditAPI;
 };
 
 type PlantStatusLabel = "Posađena" | "Ubrana" | "Prerađena";
@@ -116,10 +120,10 @@ const packagingSeed: PackagingRow[] = [
   },
 ];
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, storageAPI }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI, storageAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
-  const { token, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja">("Pregled");
+  const { token, user: authUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja" | "Korisnici" | "Evidencija">("Pregled");
   const [plantQuery, setPlantQuery] = useState("");
   const [invoiceQuery, setInvoiceQuery] = useState("");
   const [productionTab, setProductionTab] = useState<"Servis proizvodnje" | "Servis prerade">("Servis proizvodnje");
@@ -139,11 +143,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   const [plantForm, setPlantForm] = useState({ commonName: "", latinName: "", originCountry: "" });
   const [harvestForm, setHarvestForm] = useState({ latinName: "", count: 1 });
   const [changeForm, setChangeForm] = useState({ plantId: "", percent: 0 });
-  const [productionLogs, setProductionLogs] = useState<ProductionLog[]>([
-    { id: "log-1", type: "INFO", message: "Zasađena biljka: Lavanda", time: "14:23" },
-    { id: "log-2", type: "INFO", message: "Prerada završena: 5 bočica parfema", time: "14:20" },
-    { id: "log-3", type: "WARNING", message: "Upozorenje: Jačina ulja prešla 4.0", time: "14:15" },
-  ]);
+  const [productionLogs, setProductionLogs] = useState<ProductionLog[]>([]);
   const [processingForm, setProcessingForm] = useState({
     name: "",
     type: "Parfem" as PerfumeType,
@@ -152,10 +152,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     expiresAt: "",
     status: "U izradi" as PerfumeStatus,
   });
-  const [processingLogs, setProcessingLogs] = useState<ProductionLog[]>([
-    { id: "proc-1", type: "INFO", message: "Pokrenuta prerada: Lavande Noire", time: "12:05" },
-    { id: "proc-2", type: "INFO", message: "Završena prerada: Rose Imperial", time: "11:52" },
-  ]);
+  const [processingLogs, setProcessingLogs] = useState<ProductionLog[]>([]);
   const [processingPerfumes, setProcessingPerfumes] = useState<PerfumeDTO[]>([]);
   const [processingLoading, setProcessingLoading] = useState(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
@@ -197,6 +194,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       { id: `log-${Date.now()}`, type, message, time },
       ...prev,
     ].slice(0, 50));
+    // Osvježi iz audit servisa nakon kratkog delay-a
+    setTimeout(() => fetchProductionAuditLogs(), 1500);
+  };
+
+  const addProcessingLog = (type: ProductionLogType, message: string) => {
+    const time = new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" });
+    setProcessingLogs((prev) => [
+      { id: `proc-${Date.now()}`, type, message, time },
+      ...prev,
+    ].slice(0, 50));
+    setTimeout(() => fetchProcessingAuditLogs(), 1500);
   };
 
   function pickStatus(statuses: Set<PlantStatus>): PlantStatus {
@@ -250,13 +258,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
         },
         token
       );
-      const entry: ProductionLog = {
-        id: `proc-${Date.now()}`,
-        type: "INFO",
-        message: `Zahtev za preradu: ${processingForm.name.trim()}`,
-        time: new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
-      };
-      setProcessingLogs((prev) => [entry, ...prev].slice(0, 20));
+      addProcessingLog("INFO", `Zahtev za preradu: ${processingForm.name.trim()}`);
       setProcessingNotice("Parfem je uspešno dodat.");
       setProcessingForm({
         name: "",
@@ -531,9 +533,70 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     }
   }, [activeTab, token]);
 
+  // Fetch audit logova za proizvodnju (ključne riječi: biljk, zasađ, ubran, jačin)
+  const fetchProductionAuditLogs = async () => {
+    if (!token) return;
+    try {
+      const keywords = ["biljk", "zasa\u0111", "ubran", "ja\u010din"];
+      const allLogs: ProductionLog[] = [];
+      for (const kw of keywords) {
+        const data = await auditAPI.searchLogs(token, { keyword: kw });
+        for (const l of data) {
+          if (!allLogs.find((x) => x.id === l.id)) {
+            const d = new Date(l.createdAt);
+            allLogs.push({
+              id: l.id,
+              type: l.type as ProductionLogType,
+              message: l.description,
+              time: d.toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
+            });
+          }
+        }
+      }
+      allLogs.sort((a, b) => b.id.localeCompare(a.id));
+      setProductionLogs(allLogs.slice(0, 50));
+    } catch {
+      // tiho ne uspije
+    }
+  };
+
+  // Fetch audit logova za preradu (ključne riječi: parfem, prerad)
+  const fetchProcessingAuditLogs = async () => {
+    if (!token) return;
+    try {
+      const keywords = ["parfem", "prerad"];
+      const allLogs: ProductionLog[] = [];
+      for (const kw of keywords) {
+        const data = await auditAPI.searchLogs(token, { keyword: kw });
+        for (const l of data) {
+          if (!allLogs.find((x) => x.id === l.id)) {
+            const d = new Date(l.createdAt);
+            allLogs.push({
+              id: l.id,
+              type: l.type as ProductionLogType,
+              message: l.description,
+              time: d.toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
+            });
+          }
+        }
+      }
+      allLogs.sort((a, b) => b.id.localeCompare(a.id));
+      setProcessingLogs(allLogs.slice(0, 50));
+    } catch {
+      // tiho ne uspije
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "Proizvodnja" && productionTab === "Servis proizvodnje") {
+      fetchProductionAuditLogs();
+    }
+  }, [activeTab, productionTab, token]);
+
   useEffect(() => {
     if (activeTab === "Proizvodnja" && productionTab === "Servis prerade") {
       fetchProcessingPerfumes();
+      fetchProcessingAuditLogs();
     }
   }, [activeTab, productionTab, token]);
 
@@ -571,6 +634,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
               {tab}
             </button>
           ))}
+          {authUser?.role?.toLowerCase() === "admin" && (
+            <button
+              className={`tab-btn ${activeTab === "Korisnici" ? "active" : ""}`}
+              onClick={() => setActiveTab("Korisnici")}
+            >
+              Korisnici
+            </button>
+          )}
+          {authUser?.role?.toLowerCase() === "admin" && (
+            <button
+              className={`tab-btn ${activeTab === "Evidencija" ? "active" : ""}`}
+              onClick={() => setActiveTab("Evidencija")}
+            >
+              Evidencija
+            </button>
+          )}
         </div>
 
         <div className="window-content dashboard-content">
@@ -864,7 +943,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   <section className="panel">
                     <header className="panel-header">
                       <div className="panel-title">Dnevnik proizvodnje</div>
-                      <button className="btn btn-ghost" onClick={fetchProductionPlants} disabled={productionLoading}>
+                      <button className="btn btn-ghost" onClick={fetchProductionAuditLogs} disabled={productionLoading}>
                         Osveži
                       </button>
                     </header>
@@ -1005,6 +1084,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   <section className="panel">
                     <header className="panel-header">
                       <div className="panel-title">Dnevnik prerade</div>
+                      <button className="btn btn-ghost" onClick={fetchProcessingAuditLogs}>
+                        Osveži
+                      </button>
                     </header>
                     <div className="log-list">
                       {processingLogs.map((log) => (
@@ -1337,6 +1419,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                 </div>
               </section>
             </div>
+          ) : activeTab === "Korisnici" && authUser?.role?.toLowerCase() === "admin" ? (
+            <UserManagement userAPI={userAPI} />
+          ) : activeTab === "Evidencija" && authUser?.role?.toLowerCase() === "admin" ? (
+            <AuditLogViewer auditAPI={auditAPI} />
           ) : (
             <div className="panel panel-empty">
               <h2>{activeTab}</h2>

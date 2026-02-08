@@ -11,6 +11,9 @@ export interface IGatewayService {
   // Users
   getAllUsers(): Promise<UserDTO[]>;
   getUserById(id: number): Promise<UserDTO>;
+  updateUser(id: number, data: any): Promise<UserDTO>;
+  deleteUser(id: number): Promise<any>;
+  searchUsers(query: string): Promise<UserDTO[]>;
 
   // Production
   listProductionPlants(): Promise<any>;
@@ -34,4 +37,11 @@ export interface IGatewayService {
   receivePackage(warehouseId: string, packageData: any, userRole: string): Promise<any>;
   listWarehouses(userRole: string): Promise<any>;
   getWarehousePackages(warehouseId: string, userRole: string): Promise<any>;
+  // Audit
+  getAllAuditLogs(): Promise<any[]>;
+  getAuditLogById(id: string): Promise<any>;
+  createAuditLog(data: { type: string; description: string }): Promise<any>;
+  updateAuditLog(id: string, data: { type?: string; description?: string }): Promise<any>;
+  deleteAuditLog(id: string): Promise<any>;
+  searchAuditLogs(query: { type?: string; keyword?: string; dateFrom?: string; dateTo?: string }): Promise<any[]>;
 }
