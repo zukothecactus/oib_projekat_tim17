@@ -13,6 +13,7 @@ export class GatewayService implements IGatewayService {
   private readonly storageClient: AxiosInstance;
   private readonly salesClient: AxiosInstance;
   private readonly auditClient: AxiosInstance;
+  private readonly analyticsClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
@@ -22,6 +23,7 @@ export class GatewayService implements IGatewayService {
     const storageBaseURL = process.env.STORAGE_SERVICE_API;
     const salesBaseURL = process.env.SALES_SERVICE_API;
     const auditBaseURL = process.env.AUDIT_SERVICE_API;
+    const analyticsBaseURL = process.env.ANALYTICS_SERVICE_API;
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -63,6 +65,12 @@ export class GatewayService implements IGatewayService {
       baseURL: auditBaseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
+    });
+
+    this.analyticsClient = axios.create({
+      baseURL: analyticsBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 10000,
     });
   }
 
@@ -236,6 +244,47 @@ export class GatewayService implements IGatewayService {
 
   async searchAuditLogs(query: { type?: string; keyword?: string; dateFrom?: string; dateTo?: string }): Promise<any[]> {
     const response = await this.auditClient.get("/audit/logs/search", { params: query });
+    return response.data;
+  }
+
+  // Analytics microservice
+  async recordAnalyticsSale(data: any): Promise<any> {
+    const response = await this.analyticsClient.post("/analytics/record-sale", data);
+    return response.data;
+  }
+
+  async getAnalyticsSales(criteria: string): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/sales", { params: { criteria } });
+    return response.data;
+  }
+
+  async getAnalyticsTrend(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/trend");
+    return response.data;
+  }
+
+  async getAnalyticsTop10Perfumes(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/top10-perfumes");
+    return response.data;
+  }
+
+  async getAnalyticsTop10Revenue(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/top10-revenue");
+    return response.data;
+  }
+
+  async generateAnalyticsReport(type: string): Promise<any> {
+    const response = await this.analyticsClient.post("/analytics/reports/generate", { type });
+    return response.data;
+  }
+
+  async listAnalyticsReports(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/reports");
+    return response.data;
+  }
+
+  async getAnalyticsReportById(id: string): Promise<any> {
+    const response = await this.analyticsClient.get(`/analytics/reports/${id}`);
     return response.data;
   }
 }

@@ -54,6 +54,16 @@ export class GatewayController {
     this.router.post("/audit/logs", authenticate, authorize("admin"), this.createAuditLog.bind(this));
     this.router.put("/audit/logs/:id", authenticate, authorize("admin"), this.updateAuditLog.bind(this));
     this.router.delete("/audit/logs/:id", authenticate, authorize("admin"), this.deleteAuditLog.bind(this));
+
+    // Analytics (admin only)
+    this.router.post("/analytics/record-sale", authenticate, authorize("admin"), this.recordAnalyticsSale.bind(this));
+    this.router.get("/analytics/sales", authenticate, authorize("admin"), this.getAnalyticsSales.bind(this));
+    this.router.get("/analytics/trend", authenticate, authorize("admin"), this.getAnalyticsTrend.bind(this));
+    this.router.get("/analytics/top10-perfumes", authenticate, authorize("admin"), this.getAnalyticsTop10Perfumes.bind(this));
+    this.router.get("/analytics/top10-revenue", authenticate, authorize("admin"), this.getAnalyticsTop10Revenue.bind(this));
+    this.router.post("/analytics/reports/generate", authenticate, authorize("admin"), this.generateAnalyticsReport.bind(this));
+    this.router.get("/analytics/reports", authenticate, authorize("admin"), this.listAnalyticsReports.bind(this));
+    this.router.get("/analytics/reports/:id", authenticate, authorize("admin"), this.getAnalyticsReportById.bind(this));
   }
 
   // Auth
@@ -342,6 +352,81 @@ export class GatewayController {
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  // Analytics
+  private async recordAnalyticsSale(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.recordAnalyticsSale(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsSales(req: Request, res: Response): Promise<void> {
+    try {
+      const criteria = (req.query.criteria as string) ?? "month";
+      const result = await this.gatewayService.getAnalyticsSales(criteria);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsTrend(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getAnalyticsTrend();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsTop10Perfumes(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getAnalyticsTop10Perfumes();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsTop10Revenue(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getAnalyticsTop10Revenue();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async generateAnalyticsReport(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.generateAnalyticsReport(req.body.type);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listAnalyticsReports(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listAnalyticsReports();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsReportById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getAnalyticsReportById(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
     }
   }
 

@@ -50,4 +50,14 @@ export interface IGatewayService {
   updateAuditLog(id: string, data: { type?: string; description?: string }): Promise<any>;
   deleteAuditLog(id: string): Promise<any>;
   searchAuditLogs(query: { type?: string; keyword?: string; dateFrom?: string; dateTo?: string }): Promise<any[]>;
+
+  // Analytics
+  recordAnalyticsSale(data: any): Promise<any>;
+  getAnalyticsSales(criteria: string): Promise<any>;
+  getAnalyticsTrend(): Promise<any>;
+  getAnalyticsTop10Perfumes(): Promise<any>;
+  getAnalyticsTop10Revenue(): Promise<any>;
+  generateAnalyticsReport(type: string): Promise<any>;
+  listAnalyticsReports(): Promise<any>;
+  getAnalyticsReportById(id: string): Promise<any>;
 }
