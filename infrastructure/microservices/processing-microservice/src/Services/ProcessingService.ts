@@ -3,6 +3,7 @@ import { IProcessingService } from '../Domain/services/IProcessingService';
 import { Perfume } from '../Domain/models/Perfume';
 import { PerfumeType } from '../Domain/enums/PerfumeType';
 import { PerfumeStatus } from '../Domain/enums/PerfumeStatus';
+import { sendAuditLog } from '../utils/AuditClient';
 
 export class ProcessingService implements IProcessingService {
   private repo: Repository<Perfume>;
@@ -30,8 +31,11 @@ export class ProcessingService implements IProcessingService {
     const saved = await this.repo.save(perfume);
     if (!saved.serialNumber) {
       saved.serialNumber = `PP-2025-${saved.id}`;
-      return await this.repo.save(saved);
+      const final = await this.repo.save(saved);
+      sendAuditLog('INFO', `Kreiran parfem: ${final.name}, ${final.volume}ml, tip: ${final.type}`);
+      return final;
     }
+    sendAuditLog('INFO', `Kreiran parfem: ${saved.name}, ${saved.volume}ml, tip: ${saved.type}`);
     return saved;
   }
 

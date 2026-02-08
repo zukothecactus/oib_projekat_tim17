@@ -15,6 +15,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ authAPI }) => {
     email: "",
     password: "",
     role: UserRole.SELLER,
+    firstName: "",
+    lastName: "",
     profileImage: "",
   });
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -39,6 +41,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ authAPI }) => {
     setSuccess("");
 
     // Validation
+    if (formData.firstName.trim().length < 2) {
+      setError("First name must be at least 2 characters long.");
+      return;
+    }
+
+    if (formData.lastName.trim().length < 2) {
+      setError("Last name must be at least 2 characters long.");
+      return;
+    }
+
     if (formData.password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -92,6 +104,39 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ authAPI }) => {
         />
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div>
+          <label htmlFor="firstName" style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 600 }}>
+            First Name
+          </label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            placeholder="Your first name"
+            required
+            disabled={isLoading}
+          />
+        </div>
+        <div>
+          <label htmlFor="lastName" style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 600 }}>
+            Last Name
+          </label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            placeholder="Your last name"
+            required
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+
       <div>
         <label htmlFor="email" style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 600 }}>
           Email
@@ -121,6 +166,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ authAPI }) => {
           disabled={isLoading}
         >
           <option value={UserRole.SELLER}>Seller</option>
+          <option value={UserRole.SALES_MANAGER}>Sales Manager</option>
           <option value={UserRole.ADMIN}>Admin</option>
         </select>
       </div>

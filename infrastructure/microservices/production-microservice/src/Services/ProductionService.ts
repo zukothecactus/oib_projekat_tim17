@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { IProductionService } from '../Domain/services/IProductionService';
 import { Plant } from '../Domain/models/Plant';
 import { PlantStatus } from '../Domain/enums/PlantStatus';
+import { sendAuditLog } from '../utils/AuditClient';
 
 export class ProductionService implements IProductionService {
   private repo: Repository<Plant>;
@@ -13,7 +14,9 @@ export class ProductionService implements IProductionService {
   public async plantNew(commonName: string, latinName: string, originCountry: string): Promise<Plant> {
     const aromaticStrength = Number((Math.random() * 4 + 1).toFixed(2));
     const plant = this.repo.create({ commonName, latinName, originCountry, aromaticStrength, status: PlantStatus.POSADJENA });
-    return await this.repo.save(plant);
+    const saved = await this.repo.save(plant);
+    sendAuditLog('INFO', `Zasađena nova biljka: ${commonName} (${latinName}) iz ${originCountry}`);
+    return saved;
   }
 
   public async changeAromaticStrengthPercent(plantId: string, percent: number): Promise<Plant | null> {
@@ -26,7 +29,9 @@ export class ProductionService implements IProductionService {
     if (newVal > 5.0) newVal = 5.0;
 
     plant.aromaticStrength = newVal as any;
-    return await this.repo.save(plant);
+    const saved = await this.repo.save(plant);
+    sendAuditLog('INFO', `Promijenjena aromatska jačina biljke ${plant.commonName} za ${percent}% (nova: ${newVal})`);
+    return saved;
   }
 
   public async harvestByLatinName(latinName: string, count: number): Promise<Plant[]> {
@@ -35,6 +40,7 @@ export class ProductionService implements IProductionService {
       p.status = PlantStatus.UBRANA;
       await this.repo.save(p);
     }
+    sendAuditLog('INFO', `Ubrano ${candidates.length} biljaka vrste ${latinName}`);
     return candidates;
   }
 

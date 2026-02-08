@@ -5,6 +5,12 @@ export function validateRegistrationData(data: RegistrationUserDTO): { success: 
   if (!data.username || data.username.trim().length < 3) {
     return { success: false, message: "Username must be at least 3 characters long" };
   }
+  if (!data.firstName || data.firstName.trim().length < 2) {
+    return { success: false, message: "First name must be at least 2 characters long" };
+  }
+  if (!data.lastName || data.lastName.trim().length < 2) {
+    return { success: false, message: "Last name must be at least 2 characters long" };
+  }
   if (!data.password || data.password.length < 6) {
     return { success: false, message: "Password must be at least 6 characters long" };
   }
