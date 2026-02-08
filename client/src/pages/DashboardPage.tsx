@@ -182,6 +182,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     return allTabs;
   }, [authUser?.role]);
 
+  const filteredInvoices = useMemo(() => {
+    const q = invoiceQuery.trim().toLowerCase();
+    if (!q) return invoicesSeed;
+    return invoicesSeed.filter((i) =>
+      [i.id, i.saleType, i.payment, i.amount.toString(), i.date]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [invoiceQuery]);
+
   const addProductionLog = (type: ProductionLogType, message: string) => {
     const time = new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" });
     setProductionLogs((prev) => [
