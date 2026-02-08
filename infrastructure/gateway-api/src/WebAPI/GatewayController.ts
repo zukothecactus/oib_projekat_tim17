@@ -64,6 +64,11 @@ export class GatewayController {
     this.router.post("/analytics/reports/generate", authenticate, authorize("admin"), this.generateAnalyticsReport.bind(this));
     this.router.get("/analytics/reports", authenticate, authorize("admin"), this.listAnalyticsReports.bind(this));
     this.router.get("/analytics/reports/:id", authenticate, authorize("admin"), this.getAnalyticsReportById.bind(this));
+
+    // Performance (admin only)
+    this.router.post("/performance/simulate", authenticate, authorize("admin"), this.runPerformanceSimulation.bind(this));
+    this.router.get("/performance/reports", authenticate, authorize("admin"), this.listPerformanceReports.bind(this));
+    this.router.get("/performance/reports/:id", authenticate, authorize("admin"), this.getPerformanceReportById.bind(this));
   }
 
   // Auth
@@ -424,6 +429,36 @@ export class GatewayController {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const result = await this.gatewayService.getAnalyticsReportById(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  // Performance
+  private async runPerformanceSimulation(req: Request, res: Response): Promise<void> {
+    try {
+      const { packageCount } = req.body;
+      const result = await this.gatewayService.runPerformanceSimulation(packageCount);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listPerformanceReports(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listPerformanceReports();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getPerformanceReportById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getPerformanceReportById(id);
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ success: false, message: (err as Error).message });

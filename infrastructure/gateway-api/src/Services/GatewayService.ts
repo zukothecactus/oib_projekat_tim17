@@ -14,6 +14,7 @@ export class GatewayService implements IGatewayService {
   private readonly salesClient: AxiosInstance;
   private readonly auditClient: AxiosInstance;
   private readonly analyticsClient: AxiosInstance;
+  private readonly performanceClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
@@ -24,6 +25,7 @@ export class GatewayService implements IGatewayService {
     const salesBaseURL = process.env.SALES_SERVICE_API;
     const auditBaseURL = process.env.AUDIT_SERVICE_API;
     const analyticsBaseURL = process.env.ANALYTICS_SERVICE_API;
+    const performanceBaseURL = process.env.PERFORMANCE_SERVICE_API;
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -71,6 +73,12 @@ export class GatewayService implements IGatewayService {
       baseURL: analyticsBaseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 10000,
+    });
+
+    this.performanceClient = axios.create({
+      baseURL: performanceBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 15000,
     });
   }
 
@@ -285,6 +293,22 @@ export class GatewayService implements IGatewayService {
 
   async getAnalyticsReportById(id: string): Promise<any> {
     const response = await this.analyticsClient.get(`/analytics/reports/${id}`);
+    return response.data;
+  }
+
+  // Performance microservice
+  async runPerformanceSimulation(packageCount: number): Promise<any> {
+    const response = await this.performanceClient.post("/performance/simulate", { packageCount });
+    return response.data;
+  }
+
+  async listPerformanceReports(): Promise<any> {
+    const response = await this.performanceClient.get("/performance/reports");
+    return response.data;
+  }
+
+  async getPerformanceReportById(id: string): Promise<any> {
+    const response = await this.performanceClient.get(`/performance/reports/${id}`);
     return response.data;
   }
 }

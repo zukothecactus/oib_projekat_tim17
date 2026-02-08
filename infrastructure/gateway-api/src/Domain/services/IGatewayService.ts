@@ -60,4 +60,9 @@ export interface IGatewayService {
   generateAnalyticsReport(type: string): Promise<any>;
   listAnalyticsReports(): Promise<any>;
   getAnalyticsReportById(id: string): Promise<any>;
+
+  // Performance
+  runPerformanceSimulation(packageCount: number): Promise<any>;
+  listPerformanceReports(): Promise<any>;
+  getPerformanceReportById(id: string): Promise<any>;
 }

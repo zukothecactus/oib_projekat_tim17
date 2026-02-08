@@ -13,9 +13,11 @@ import { AuditLogViewer } from "../components/dashboard/audit/AuditLogViewer";
 import { IAuditAPI } from "../api/audit/IAuditAPI";
 import { ISalesAPI } from "../api/sales/ISalesAPI";
 import { IAnalyticsAPI } from "../api/analytics/IAnalyticsAPI";
+import { IPerformanceAPI } from "../api/performance/IPerformanceAPI";
 import { CatalogItemDTO, InvoiceDTO, SaleType, PaymentMethod } from "../models/sales/SalesDTO";
 import { useAuth } from "../hooks/useAuthHook";
 import { AnalyticsView } from "../components/dashboard/analytics/AnalyticsView";
+import { PerformanceView } from "../components/dashboard/performance/PerformanceView";
 
 export type DashboardPageProps = {
   userAPI: IUserAPI;
@@ -25,6 +27,7 @@ export type DashboardPageProps = {
   auditAPI: IAuditAPI;
   salesAPI: ISalesAPI;
   analyticsAPI: IAnalyticsAPI;
+  performanceAPI: IPerformanceAPI;
 };
 
 type PlantStatusLabel = "Posađena" | "Ubrana" | "Prerađena";
@@ -110,10 +113,10 @@ const packagingSeed: PackagingRow[] = [
   },
 ];
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI, storageAPI, salesAPI, analyticsAPI }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI, storageAPI, salesAPI, analyticsAPI, performanceAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token, user: authUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja" | "Korisnici" | "Evidencija" | "Analiza prodaje">("Pregled");
+  const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja" | "Korisnici" | "Evidencija" | "Analiza prodaje" | "Analiza performansi">("Pregled");
   const [plantQuery, setPlantQuery] = useState("");
   const [invoiceQuery, setInvoiceQuery] = useState("");
   const [productionTab, setProductionTab] = useState<"Servis proizvodnje" | "Servis prerade">("Servis proizvodnje");
@@ -789,6 +792,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
               onClick={() => setActiveTab("Analiza prodaje")}
             >
               Analiza prodaje
+            </button>
+          )}
+          {authUser?.role?.toLowerCase() === "admin" && (
+            <button
+              className={`tab-btn ${activeTab === "Analiza performansi" ? "active" : ""}`}
+              onClick={() => setActiveTab("Analiza performansi")}
+            >
+              Analiza performansi
             </button>
           )}
         </div>
@@ -1806,6 +1817,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
           ) : activeTab === "Analiza prodaje" ? (
             <div>
               <AnalyticsView analyticsAPI={analyticsAPI} />
+            </div>
+          ) : activeTab === "Analiza performansi" ? (
+            <div>
+              <PerformanceView performanceAPI={performanceAPI} />
             </div>
           ) : (
             <div className="panel panel-empty">
