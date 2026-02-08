@@ -5,6 +5,7 @@ import { StoredPackage } from "../../Domain/models/StoredPackage";
 import { IStorageService } from "../../Domain/services/IStorageService";
 import { DistributionCenterService } from "../../Services/DistributionCenterService";
 import { WarehouseCenterService } from "../../Services/WarehouseCenterService";
+import { sendAuditLog } from "../../utils/AuditClient";
 
 export class StorageController {
   private readonly router: Router;
@@ -44,6 +45,7 @@ export class StorageController {
       const dispatched = await service.sendToSales(count ?? 1);
       res.status(200).json({ success: true, dispatched });
     } catch (err) {
+      sendAuditLog('ERROR', `Skladiste: greska pri slanju na prodaju — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: (err as Error).message });
     }
   }
@@ -55,6 +57,7 @@ export class StorageController {
       const stored = await service.receivePackage(warehouseId, packageData);
       res.status(201).json({ success: true, stored });
     } catch (err) {
+      sendAuditLog('ERROR', `Skladiste: greska pri prijemu ambalaze — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: (err as Error).message });
     }
   }
@@ -65,6 +68,7 @@ export class StorageController {
       const warehouses = await service.listWarehouses();
       res.status(200).json({ success: true, list: warehouses });
     } catch (err) {
+      sendAuditLog('ERROR', `Skladiste: greska pri dohvatanju skladista — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: (err as Error).message });
     }
   }
@@ -76,6 +80,7 @@ export class StorageController {
       const packages = await service.getWarehousePackages(id);
       res.status(200).json({ success: true, list: packages });
     } catch (err) {
+      sendAuditLog('ERROR', `Skladiste: greska pri dohvatanju ambalaza iz skladista — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: (err as Error).message });
     }
   }

@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { IProcessingService } from '../../Domain/services/IProcessingService';
 import { validatePerfumeCreate, validateStartProcessing } from '../validators/ProcessingValidators';
 import { PerfumeType } from '../../Domain/enums/PerfumeType';
+import { sendAuditLog } from '../../utils/AuditClient';
 
 export class ProcessingController {
   private router: Router;
@@ -37,6 +38,7 @@ export class ProcessingController {
       });
       res.status(201).json({ success: true, perfume });
     } catch (err) {
+      sendAuditLog('ERROR', `Prerada: greska pri kreiranju parfema — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -46,6 +48,7 @@ export class ProcessingController {
       const list = await this.service.listPerfumes();
       res.status(200).json({ success: true, list });
     } catch (err) {
+      sendAuditLog('ERROR', `Prerada: greska pri dohvatanju liste parfema — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -66,6 +69,7 @@ export class ProcessingController {
       res.status(201).json({ success: true, perfumes });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Server error';
+      sendAuditLog('ERROR', `Prerada: greska pri pokretanju prerade — ${message}`);
       const isBusinessError = message.includes('Nedovoljno biljaka');
       res.status(isBusinessError ? 400 : 500).json({ success: false, message });
     }
@@ -86,6 +90,7 @@ export class ProcessingController {
       const list = await this.service.getPerfumesByTypeAndCount(type as PerfumeType, count);
       res.status(200).json({ success: true, list });
     } catch (err) {
+      sendAuditLog('ERROR', `Prerada: greska pri dohvatanju dostupnih parfema — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }

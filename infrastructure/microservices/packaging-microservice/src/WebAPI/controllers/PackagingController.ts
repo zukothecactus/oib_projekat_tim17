@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { IPackagingService } from '../../Domain/services/IPackagingService';
 import { validatePackPerfumes, validateSendToWarehouse } from '../validators/PackagingValidators';
+import { sendAuditLog } from '../../utils/AuditClient';
 
 export class PackagingController {
   private router: Router;
@@ -35,6 +36,7 @@ export class PackagingController {
       res.status(201).json({ success: true, package: pkg });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Server error';
+      sendAuditLog('ERROR', `Pakovanje: greska pri pakovanju parfema — ${message}`);
       const isBusinessError =
         message.includes('Nedovoljno dostupnih parfema') ||
         message.includes('Parfemi su vec spakovani');
@@ -52,6 +54,7 @@ export class PackagingController {
       res.status(200).json({ success: true, package: pkg });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Server error';
+      sendAuditLog('ERROR', `Pakovanje: greska pri slanju u skladiste — ${message}`);
       const isBusinessError =
         message.includes('Nema dostupnih ambalaza') ||
         message.includes('nije pronadjena') ||
@@ -66,6 +69,7 @@ export class PackagingController {
       const list = await this.service.listPackages();
       res.status(200).json({ success: true, list });
     } catch (err) {
+      sendAuditLog('ERROR', `Pakovanje: greska pri dohvatanju liste ambalaza — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -76,6 +80,7 @@ export class PackagingController {
       res.status(200).json({ success: true, package: pkg });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Server error';
+      sendAuditLog('WARNING', `Pakovanje: greska pri dohvatanju ambalaze ${req.params.id} — ${message}`);
       const isNotFound = message.includes('nije pronadjena');
       res.status(isNotFound ? 404 : 500).json({ success: false, message });
     }

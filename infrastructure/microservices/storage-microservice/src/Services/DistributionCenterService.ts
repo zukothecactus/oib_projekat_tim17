@@ -3,6 +3,7 @@ import { IStorageService } from "../Domain/services/IStorageService";
 import { Warehouse } from "../Domain/models/Warehouse";
 import { StoredPackage } from "../Domain/models/StoredPackage";
 import { v4 as uuidv4 } from "uuid";
+import { sendAuditLog } from "../utils/AuditClient";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -33,6 +34,7 @@ export class DistributionCenterService implements IStorageService {
       dispatched.push(saved);
     }
 
+    sendAuditLog('INFO', `Skladiste (DC): poslato ${dispatched.length} ambalaza na prodaju`);
     return dispatched;
   }
 
@@ -43,7 +45,9 @@ export class DistributionCenterService implements IStorageService {
       packageData,
       isDispatched: false,
     });
-    return this.storedPkgRepo.save(pkg);
+    const saved = await this.storedPkgRepo.save(pkg);
+    sendAuditLog('INFO', `Skladiste (DC): primljena ambalaza u skladiste ${warehouseId}`);
+    return saved;
   }
 
   async listWarehouses(): Promise<Warehouse[]> {

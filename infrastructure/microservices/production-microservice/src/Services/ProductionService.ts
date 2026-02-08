@@ -15,7 +15,7 @@ export class ProductionService implements IProductionService {
     const aromaticStrength = Number((Math.random() * 4 + 1).toFixed(2));
     const plant = this.repo.create({ commonName, latinName, originCountry, aromaticStrength, status: PlantStatus.POSADJENA });
     const saved = await this.repo.save(plant);
-    sendAuditLog('INFO', `Zasađena nova biljka: ${commonName} (${latinName}) iz ${originCountry}`);
+    sendAuditLog('INFO', `Zasađena nova biljka: ${commonName} (${latinName}) iz ${originCountry}, jacina: ${aromaticStrength}`);
     return saved;
   }
 

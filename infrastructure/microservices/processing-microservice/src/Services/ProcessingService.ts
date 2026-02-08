@@ -109,6 +109,11 @@ export class ProcessingService implements IProcessingService {
           plantId: newPlant.id,
           percent,
         });
+
+        sendAuditLog('INFO',
+          `Prerada: biljka ${plant.commonName} (jacina ${plant.aromaticStrength}) prelazi granicu 4.0 — ` +
+          `zasadjena zamenska biljka (ID: ${newPlant.id}), jacina smanjena na ${deviationPercent}% trenutne vrednosti`
+        );
       }
     }
 
@@ -139,6 +144,7 @@ export class ProcessingService implements IProcessingService {
       createdPerfumes.push(saved);
     }
 
+    sendAuditLog('INFO', `Prerada: zavrsena prerada ${createdPerfumes.length} bocica parfema "${params.perfumeName}" (${params.bottleVolume}ml, ${params.perfumeType}) od ${harvested.length} biljaka`);
     return createdPerfumes;
   }
 

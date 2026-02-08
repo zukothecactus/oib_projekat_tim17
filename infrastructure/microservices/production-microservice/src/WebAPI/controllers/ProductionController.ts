@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { IProductionService } from '../../Domain/services/IProductionService';
 import { validatePlantCreate, validateChangeStrength, validateHarvest } from '../validators/PlantValidators';
+import { sendAuditLog } from '../../utils/AuditClient';
 
 export class ProductionController {
   private router: Router;
@@ -29,6 +30,7 @@ export class ProductionController {
       const result = await this.service.plantNew(data.commonName, data.latinName, data.originCountry);
       res.status(201).json({ success: true, plant: result });
     } catch (err) {
+      sendAuditLog('ERROR', `Proizvodnja: greska pri sadnji biljke — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -40,9 +42,13 @@ export class ProductionController {
       if (!v.success) { res.status(400).json(v); return; }
 
       const updated = await this.service.changeAromaticStrengthPercent(data.plantId, data.percent);
-      if (!updated) { res.status(404).json({ success: false, message: 'Plant not found' }); return; }
+      if (!updated) {
+        sendAuditLog('WARNING', `Proizvodnja: biljka sa ID ${data.plantId} nije pronadjena za promenu jacine`);
+        res.status(404).json({ success: false, message: 'Plant not found' }); return;
+      }
       res.status(200).json({ success: true, plant: updated });
     } catch (err) {
+      sendAuditLog('ERROR', `Proizvodnja: greska pri promeni jacine aromaticnih ulja — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -56,6 +62,7 @@ export class ProductionController {
       const harvested = await this.service.harvestByLatinName(data.latinName, data.count);
       res.status(200).json({ success: true, harvested });
     } catch (err) {
+      sendAuditLog('ERROR', `Proizvodnja: greska pri berbi biljaka ${data.latinName} — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -67,8 +74,10 @@ export class ProductionController {
       if (!v.success) { res.status(400).json(v); return; }
 
       const processed = await this.service.processByLatinName(data.latinName, data.count);
+      sendAuditLog('INFO', `Proizvodnja: preradjeno ${processed.length} biljaka vrste ${data.latinName}`);
       res.status(200).json({ success: true, processed });
     } catch (err) {
+      sendAuditLog('ERROR', `Proizvodnja: greska pri preradi biljaka ${data.latinName} — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
@@ -78,6 +87,7 @@ export class ProductionController {
       const list = await this.service.listPlants();
       res.status(200).json({ success: true, list });
     } catch (err) {
+      sendAuditLog('ERROR', `Proizvodnja: greska pri dohvatanju liste biljaka — ${(err as Error).message}`);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }

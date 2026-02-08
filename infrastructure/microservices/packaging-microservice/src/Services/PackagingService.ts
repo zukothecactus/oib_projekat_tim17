@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { IPackagingService } from '../Domain/services/IPackagingService';
 import { Package } from '../Domain/models/Package';
 import { PackageStatus } from '../Domain/enums/PackageStatus';
+import { sendAuditLog } from '../utils/AuditClient';
 
 export class PackagingService implements IPackagingService {
   private repo: Repository<Package>;
@@ -74,7 +75,9 @@ export class PackagingService implements IPackagingService {
       status: PackageStatus.SPAKOVANA,
     });
 
-    return await this.repo.save(pkg);
+    const saved = await this.repo.save(pkg);
+    sendAuditLog('INFO', `Pakovanje: spakovana ambalaza "${saved.name}" sa ${perfumeIds.length} parfema (ID: ${saved.id})`);
+    return saved;
   }
 
   async sendToWarehouse(packageId: string, warehouseId: string): Promise<Package> {
@@ -95,7 +98,9 @@ export class PackagingService implements IPackagingService {
     target.warehouseId = warehouseId;
     target.status = PackageStatus.POSLATA;
 
-    return await this.repo.save(target);
+    const saved = await this.repo.save(target);
+    sendAuditLog('INFO', `Pakovanje: ambalaza "${saved.name}" (ID: ${saved.id}) poslata u skladiste ${warehouseId}`);
+    return saved;
   }
 
   async listPackages(): Promise<Package[]> {
