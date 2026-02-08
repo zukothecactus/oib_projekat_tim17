@@ -41,10 +41,10 @@ export class GatewayController {
     this.router.get("/storage/warehouses", authenticate, authorize("admin", "seller", "sales_manager"), this.listWarehouses.bind(this));
     this.router.get("/storage/warehouses/:id/packages", authenticate, authorize("admin", "seller", "sales_manager"), this.getWarehousePackages.bind(this));
     
-    // Audit (admin only)
-    this.router.get("/audit/logs/search", authenticate, authorize("admin"), this.searchAuditLogs.bind(this));
-    this.router.get("/audit/logs", authenticate, authorize("admin"), this.getAllAuditLogs.bind(this));
-    this.router.get("/audit/logs/:id", authenticate, authorize("admin"), this.getAuditLogById.bind(this));
+    // Audit (read = all authenticated, write = admin only)
+    this.router.get("/audit/logs/search", authenticate, this.searchAuditLogs.bind(this));
+    this.router.get("/audit/logs", authenticate, this.getAllAuditLogs.bind(this));
+    this.router.get("/audit/logs/:id", authenticate, this.getAuditLogById.bind(this));
     this.router.post("/audit/logs", authenticate, authorize("admin"), this.createAuditLog.bind(this));
     this.router.put("/audit/logs/:id", authenticate, authorize("admin"), this.updateAuditLog.bind(this));
     this.router.delete("/audit/logs/:id", authenticate, authorize("admin"), this.deleteAuditLog.bind(this));
