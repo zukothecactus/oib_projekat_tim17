@@ -1,0 +1,5 @@
+export enum PaymentMethod {
+  GOTOVINA = "GOTOVINA",
+  UPLATA_NA_RACUN = "UPLATA_NA_RACUN",
+  KARTICNO = "KARTICNO",
+}

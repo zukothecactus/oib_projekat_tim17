@@ -37,6 +37,12 @@ export interface IGatewayService {
   receivePackage(warehouseId: string, packageData: any, userRole: string): Promise<any>;
   listWarehouses(userRole: string): Promise<any>;
   getWarehousePackages(warehouseId: string, userRole: string): Promise<any>;
+  // Sales
+  getSalesCatalog(): Promise<any>;
+  purchaseSales(data: { items: { perfumeId: string; quantity: number }[]; saleType: string; paymentMethod: string }): Promise<any>;
+  listSalesInvoices(): Promise<any>;
+  getSalesInvoiceById(id: string): Promise<any>;
+
   // Audit
   getAllAuditLogs(): Promise<any[]>;
   getAuditLogById(id: string): Promise<any>;

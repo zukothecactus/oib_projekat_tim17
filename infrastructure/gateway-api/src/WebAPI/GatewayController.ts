@@ -34,13 +34,19 @@ export class GatewayController {
     // Processing
     this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.listProcessingPerfumes.bind(this));
     this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.createProcessingPerfume.bind(this));
-    
+
     // Storage
     this.router.post("/storage/send-to-sales", authenticate, authorize("admin", "seller", "sales_manager"), this.sendToSales.bind(this));
     this.router.post("/storage/receive", authenticate, authorize("admin", "seller", "sales_manager"), this.receivePackage.bind(this));
     this.router.get("/storage/warehouses", authenticate, authorize("admin", "seller", "sales_manager"), this.listWarehouses.bind(this));
     this.router.get("/storage/warehouses/:id/packages", authenticate, authorize("admin", "seller", "sales_manager"), this.getWarehousePackages.bind(this));
-    
+
+    // Sales
+    this.router.get("/sales/catalog", authenticate, authorize("seller", "sales_manager"), this.getSalesCatalog.bind(this));
+    this.router.post("/sales/purchase", authenticate, authorize("seller", "sales_manager"), this.purchaseSales.bind(this));
+    this.router.get("/sales/invoices", authenticate, authorize("seller", "sales_manager"), this.listSalesInvoices.bind(this));
+    this.router.get("/sales/invoices/:id", authenticate, authorize("seller", "sales_manager"), this.getSalesInvoiceById.bind(this));
+
     // Audit (admin only)
     this.router.get("/audit/logs/search", authenticate, authorize("admin"), this.searchAuditLogs.bind(this));
     this.router.get("/audit/logs", authenticate, authorize("admin"), this.getAllAuditLogs.bind(this));
@@ -91,7 +97,6 @@ export class GatewayController {
         res.status(401).json({ message: "You can only access your own data!" });
         return;
       }
-
       const user = await this.gatewayService.getUserById(id);
       res.status(200).json(user);
     } catch (err) {
@@ -230,6 +235,47 @@ export class GatewayController {
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  // Sales
+  private async getSalesCatalog(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getSalesCatalog();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async purchaseSales(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.purchaseSales(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listSalesInvoices(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listSalesInvoices();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getSalesInvoiceById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getSalesInvoiceById(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
   // Audit
   private async getAllAuditLogs(req: Request, res: Response): Promise<void> {
     try {

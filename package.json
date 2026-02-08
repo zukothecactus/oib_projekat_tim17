@@ -11,10 +11,11 @@
     "start:production": "cd infrastructure/microservices/production-microservice && npm start",
     "start:processing": "cd infrastructure/microservices/processing-microservice && npm start",
     "start:storage": "cd infrastructure/microservices/storage-microservice && npm start",
+    "start:sales": "cd infrastructure/microservices/sales-microservice && npm start",
     "start:audit": "cd infrastructure/microservices/audit-microservice && npm start",
     "dev:client": "npm run start:client",
-    "dev:infrastructure": "concurrently \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\" \"npm run start:audit\" \"npm run start:storage\"",
-    "dev:all": "concurrently \"npm run start:client\" \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\" \"npm run start:audit\" \"npm run start:storage\"",
+    "dev:infrastructure": "concurrently \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\" \"npm run start:audit\" \"npm run start:storage\" \"npm run start:sales\"",
+    "dev:all": "concurrently \"npm run start:client\" \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\" \"npm run start:audit\" \"npm run start:storage\" \"npm run start:sales\"",
     "clean-dev": "rimraf %APPDATA%/client"
   },
   "devDependencies": {

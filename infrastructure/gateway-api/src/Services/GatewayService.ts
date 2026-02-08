@@ -11,6 +11,7 @@ export class GatewayService implements IGatewayService {
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
   private readonly storageClient: AxiosInstance;
+  private readonly salesClient: AxiosInstance;
   private readonly auditClient: AxiosInstance;
 
   constructor() {
@@ -19,6 +20,7 @@ export class GatewayService implements IGatewayService {
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
     const storageBaseURL = process.env.STORAGE_SERVICE_API;
+    const salesBaseURL = process.env.SALES_SERVICE_API;
     const auditBaseURL = process.env.AUDIT_SERVICE_API;
 
     this.authClient = axios.create({
@@ -49,6 +51,14 @@ export class GatewayService implements IGatewayService {
       baseURL: storageBaseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 15000,
+    });
+
+    this.salesClient = axios.create({
+      baseURL: salesBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
+
     this.auditClient = axios.create({
       baseURL: auditBaseURL,
       headers: { "Content-Type": "application/json" },
@@ -174,6 +184,30 @@ export class GatewayService implements IGatewayService {
     const response = await this.storageClient.get(`/storage/warehouses/${warehouseId}/packages`, {
       headers: { "X-User-Role": userRole },
     });
+    return response.data;
+  }
+
+  // Sales microservice
+  async getSalesCatalog(): Promise<any> {
+    const response = await this.salesClient.get("/sales/catalog");
+    return response.data;
+  }
+
+  async purchaseSales(data: { items: { perfumeId: string; quantity: number }[]; saleType: string; paymentMethod: string }): Promise<any> {
+    const response = await this.salesClient.post("/sales/purchase", data);
+    return response.data;
+  }
+
+  async listSalesInvoices(): Promise<any> {
+    const response = await this.salesClient.get("/sales/invoices");
+    return response.data;
+  }
+
+  async getSalesInvoiceById(id: string): Promise<any> {
+    const response = await this.salesClient.get(`/sales/invoices/${id}`);
+    return response.data;
+  }
+
   // Audit microservice
   async getAllAuditLogs(): Promise<any[]> {
     const response = await this.auditClient.get("/audit/logs");

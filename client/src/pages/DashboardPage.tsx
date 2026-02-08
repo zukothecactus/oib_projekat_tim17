@@ -11,6 +11,8 @@ import { DashboardNavbar } from "../components/dashboard/navbar/Navbar";
 import { UserManagement } from "../components/dashboard/users/UserManagement";
 import { AuditLogViewer } from "../components/dashboard/audit/AuditLogViewer";
 import { IAuditAPI } from "../api/audit/IAuditAPI";
+import { ISalesAPI } from "../api/sales/ISalesAPI";
+import { CatalogItemDTO, InvoiceDTO, SaleType, PaymentMethod } from "../models/sales/SalesDTO";
 import { useAuth } from "../hooks/useAuthHook";
 
 export type DashboardPageProps = {
@@ -19,6 +21,7 @@ export type DashboardPageProps = {
   processingAPI: IProcessingAPI;
   storageAPI: IStorageAPI;
   auditAPI: IAuditAPI;
+  salesAPI: ISalesAPI;
 };
 
 type PlantStatusLabel = "Posađena" | "Ubrana" | "Prerađena";
@@ -41,15 +44,6 @@ type InvoiceRow = {
 };
 
 type PackageStatus = "Spakovana" | "Poslata";
-
-type CatalogItem = {
-  id: string;
-  name: string;
-  type: PerfumeType;
-  volume: number;
-  price: number;
-  stock: number;
-};
 
 type PackageItem = {
   id: string;
@@ -84,13 +78,6 @@ const invoicesSeed: InvoiceRow[] = [
 
 
 
-const catalogSeed: CatalogItem[] = [
-  { id: "cat-1", name: "Rosa Mistika", type: "Parfem", volume: 250, price: 12500, stock: 45 },
-  { id: "cat-2", name: "Lavander Noir", type: "Kolonjska voda", volume: 150, price: 8900, stock: 67 },
-  { id: "cat-3", name: "Bergamot Esenc", type: "Parfem", volume: 250, price: 13200, stock: 23 },
-  { id: "cat-4", name: "Jasmin De Nuj", type: "Kolonjska voda", volume: 150, price: 9500, stock: 38 },
-];
-
 const packagingSeed: PackagingRow[] = [
   {
     id: "AMB-2025-101",
@@ -120,7 +107,7 @@ const packagingSeed: PackagingRow[] = [
   },
 ];
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI, storageAPI }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI, storageAPI, salesAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token, user: authUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja" | "Korisnici" | "Evidencija">("Pregled");
@@ -168,25 +155,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
   const [receiveForm, setReceiveForm] = useState({ warehouseId: "", packageName: "", volume: 150, count: 1 });
 
+  // Sales state
+  const [salesCatalog, setSalesCatalog] = useState<CatalogItemDTO[]>([]);
+  const [salesInvoices, setSalesInvoices] = useState<InvoiceDTO[]>([]);
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [salesError, setSalesError] = useState<string | null>(null);
+  const [salesNotice, setSalesNotice] = useState<string | null>(null);
+  const [salesCart, setSalesCart] = useState<{ perfumeId: string; perfumeName: string; quantity: number; unitPrice: number }[]>([]);
+  const [salesSaleType, setSalesSaleType] = useState<string>(SaleType.MALOPRODAJA);
+  const [salesPaymentMethod, setSalesPaymentMethod] = useState<string>(PaymentMethod.GOTOVINA);
+  const [salesCheckoutLoading, setSalesCheckoutLoading] = useState(false);
+  const [salesTab, setSalesTab] = useState<"Katalog" | "Korpa" | "Fakture">("Katalog");
+
   // Available tabs based on user role
   const availableTabs = useMemo(() => {
     const allTabs = ["Pregled", "Proizvodnja", "Prerada", "Pakovanje", "Skladištenje", "Prodaja"] as const;
-    if (user?.role?.toUpperCase() === "ADMIN") {
-      return allTabs.filter(tab => tab !== "Skladištenje");
+    if (authUser?.role?.toUpperCase() === "ADMIN") {
+      return allTabs.filter(tab => tab !== "Skladištenje" && tab !== "Prodaja");
     }
     return allTabs;
-  }, [user?.role]);
-
-  const filteredInvoices = useMemo(() => {
-    const q = invoiceQuery.trim().toLowerCase();
-    if (!q) return invoicesSeed;
-    return invoicesSeed.filter((i) =>
-      [i.id, i.saleType, i.payment, i.amount.toString(), i.date]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [invoiceQuery]);
+  }, [authUser?.role]);
 
   const addProductionLog = (type: ProductionLogType, message: string) => {
     const time = new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" });
@@ -194,8 +182,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       { id: `log-${Date.now()}`, type, message, time },
       ...prev,
     ].slice(0, 50));
-    // Osvježi iz audit servisa nakon kratkog delay-a
-    setTimeout(() => fetchProductionAuditLogs(), 1500);
+    // Osvježi iz audit servisa nakon kratkog delay-a (samo za admin)
+    if (authUser?.role?.toUpperCase() === "ADMIN") {
+      setTimeout(() => fetchProductionAuditLogs(), 1500);
+    }
   };
 
   const addProcessingLog = (type: ProductionLogType, message: string) => {
@@ -204,7 +194,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       { id: `proc-${Date.now()}`, type, message, time },
       ...prev,
     ].slice(0, 50));
-    setTimeout(() => fetchProcessingAuditLogs(), 1500);
+    // Osvježi iz audit servisa nakon kratkog delay-a (samo za admin)
+    if (authUser?.role?.toUpperCase() === "ADMIN") {
+      setTimeout(() => fetchProcessingAuditLogs(), 1500);
+    }
   };
 
   function pickStatus(statuses: Set<PlantStatus>): PlantStatus {
@@ -535,7 +528,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
 
   // Fetch audit logova za proizvodnju (ključne riječi: biljk, zasađ, ubran, jačin)
   const fetchProductionAuditLogs = async () => {
-    if (!token) return;
+    if (!token || authUser?.role?.toUpperCase() !== "ADMIN") return;
     try {
       const keywords = ["biljk", "zasa\u0111", "ubran", "ja\u010din"];
       const allLogs: ProductionLog[] = [];
@@ -562,7 +555,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
 
   // Fetch audit logova za preradu (ključne riječi: parfem, prerad)
   const fetchProcessingAuditLogs = async () => {
-    if (!token) return;
+    if (!token || authUser?.role?.toUpperCase() !== "ADMIN") return;
     try {
       const keywords = ["parfem", "prerad"];
       const allLogs: ProductionLog[] = [];
@@ -591,18 +584,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     if (activeTab === "Proizvodnja" && productionTab === "Servis proizvodnje") {
       fetchProductionAuditLogs();
     }
-  }, [activeTab, productionTab, token]);
+  }, [activeTab, productionTab, token, authUser?.role]);
 
   useEffect(() => {
     if (activeTab === "Proizvodnja" && productionTab === "Servis prerade") {
       fetchProcessingPerfumes();
       fetchProcessingAuditLogs();
     }
-  }, [activeTab, productionTab, token]);
+  }, [activeTab, productionTab, token, authUser?.role]);
 
   useEffect(() => {
     if (activeTab === "Skladištenje") {
       fetchWarehouses();
+      fetchSalesCatalog();
     }
   }, [activeTab, token]);
 
@@ -611,6 +605,142 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       fetchWarehousePackages(selectedWarehouseId);
     }
   }, [selectedWarehouseId, activeTab]);
+
+  // Sales functions
+  const fetchSalesCatalog = async () => {
+    if (!token) return;
+    setSalesLoading(true);
+    setSalesError(null);
+    try {
+      const list = await salesAPI.getCatalog(token);
+      setSalesCatalog(list);
+    } catch {
+      setSalesError("Ne mogu da učitam katalog.");
+    } finally {
+      setSalesLoading(false);
+    }
+  };
+
+  const fetchSalesInvoices = async () => {
+    if (!token) return;
+    setSalesLoading(true);
+    setSalesError(null);
+    try {
+      const list = await salesAPI.listInvoices(token);
+      setSalesInvoices(list);
+    } catch {
+      setSalesError("Ne mogu da učitam fakture.");
+    } finally {
+      setSalesLoading(false);
+    }
+  };
+
+  const addToCart = (item: CatalogItemDTO) => {
+    setSalesCart((prev) => {
+      const existing = prev.find((c) => c.perfumeId === item.id);
+      if (existing) {
+        return prev.map((c) =>
+          c.perfumeId === item.id ? { ...c, quantity: c.quantity + 1 } : c
+        );
+      }
+      const unitPrice = item.volume === 250 ? 13200 : 8900;
+      return [...prev, { perfumeId: item.id, perfumeName: item.name, quantity: 1, unitPrice }];
+    });
+    setSalesNotice(`${item.name} dodat u korpu.`);
+    setTimeout(() => setSalesNotice(null), 2000);
+  };
+
+  const removeFromCart = (perfumeId: string) => {
+    setSalesCart((prev) => prev.filter((c) => c.perfumeId !== perfumeId));
+  };
+
+  const updateCartQuantity = (perfumeId: string, quantity: number) => {
+    if (quantity < 1) return;
+    setSalesCart((prev) =>
+      prev.map((c) => (c.perfumeId === perfumeId ? { ...c, quantity } : c))
+    );
+  };
+
+  const cartTotal = useMemo(() => {
+    return salesCart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  }, [salesCart]);
+
+  const handleCheckout = async () => {
+    if (!token || salesCart.length === 0) return;
+    setSalesCheckoutLoading(true);
+    setSalesError(null);
+    setSalesNotice(null);
+    try {
+      const invoice = await salesAPI.purchase(
+        {
+          items: salesCart.map((c) => ({ perfumeId: c.perfumeId, quantity: c.quantity })),
+          saleType: salesSaleType,
+          paymentMethod: salesPaymentMethod,
+        },
+        token
+      );
+      setSalesNotice(`Faktura ${invoice.id.substring(0, 8)}... kreirana uspešno! Iznos: ${Number(invoice.totalAmount).toLocaleString("sr-RS")} RSD`);
+      setSalesCart([]);
+      await fetchSalesInvoices();
+      setSalesTab("Fakture");
+    } catch (err: any) {
+      setSalesError(err?.response?.data?.message ?? "Greška pri kupovini.");
+    } finally {
+      setSalesCheckoutLoading(false);
+    }
+  };
+
+  const saleTypeLabel = (st: string) => {
+    if (st === "MALOPRODAJA") return "Maloprodaja";
+    if (st === "VELEPRODAJA") return "Veleprodaja";
+    return st;
+  };
+
+  const paymentLabel = (pm: string) => {
+    if (pm === "GOTOVINA") return "Gotovina";
+    if (pm === "UPLATA_NA_RACUN") return "Uplata na račun";
+    if (pm === "KARTICNO") return "Kartično";
+    return pm;
+  };
+
+  useEffect(() => {
+    if (activeTab === "Prodaja") {
+      fetchSalesCatalog();
+      fetchSalesInvoices();
+    }
+  }, [activeTab, token]);
+
+  // Use real invoices in overview if available
+  const overviewInvoices = useMemo(() => {
+    if (salesInvoices.length > 0) {
+      return salesInvoices.map((inv) => ({
+        id: inv.id.substring(0, 12),
+        saleType: saleTypeLabel(inv.saleType) as "Maloprodaja" | "Veleprodaja",
+        payment: paymentLabel(inv.paymentMethod) as "Gotovina" | "Uplata na račun" | "Kartično",
+        amount: Number(inv.totalAmount),
+        date: new Date(inv.createdAt).toLocaleDateString("sr-RS"),
+      }));
+    }
+    return invoicesSeed;
+  }, [salesInvoices]);
+
+  const filteredInvoicesReal = useMemo(() => {
+    const q = invoiceQuery.trim().toLowerCase();
+    if (!q) return overviewInvoices;
+    return overviewInvoices.filter((i) =>
+      [i.id, i.saleType, i.payment, i.amount.toString(), i.date]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [invoiceQuery, overviewInvoices]);
+
+  // Fetch invoices on overview too (only for non-admin users)
+  useEffect(() => {
+    if (activeTab === "Pregled" && token && authUser?.role?.toUpperCase() !== "ADMIN") {
+      fetchSalesInvoices();
+    }
+  }, [activeTab, token, authUser?.role]);
 
   return (
     <div className="dashboard-root">
@@ -708,46 +838,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                 </footer>
               </section>
 
-              <section className="panel">
-                <header className="panel-header">
-                  <div className="panel-title">Fiskalni računi</div>
-                  <input
-                    type="search"
-                    placeholder="Pretraga računa..."
-                    value={invoiceQuery}
-                    onChange={(e) => setInvoiceQuery(e.target.value)}
-                  />
-                </header>
+              {authUser?.role?.toUpperCase() !== "ADMIN" && (
+                <section className="panel">
+                  <header className="panel-header">
+                    <div className="panel-title">Fiskalni računi</div>
+                    <input
+                      type="search"
+                      placeholder="Pretraga računa..."
+                      value={invoiceQuery}
+                      onChange={(e) => setInvoiceQuery(e.target.value)}
+                    />
+                  </header>
 
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Broj računa</th>
-                        <th>Tip prodaje</th>
-                        <th>Način plaćanja</th>
-                        <th>Iznos (RSD)</th>
-                        <th>Datum</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredInvoices.map((i) => (
-                        <tr key={i.id}>
-                          <td>{i.id}</td>
-                          <td>{i.saleType}</td>
-                          <td>{i.payment}</td>
-                          <td>{i.amount.toLocaleString("sr-RS")}</td>
-                          <td>{i.date}</td>
+                  <div className="table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Broj računa</th>
+                          <th>Tip prodaje</th>
+                          <th>Način plaćanja</th>
+                          <th>Iznos (RSD)</th>
+                          <th>Datum</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {filteredInvoicesReal.map((i) => (
+                          <tr key={i.id}>
+                            <td>{i.id}</td>
+                            <td>{i.saleType}</td>
+                            <td>{i.payment}</td>
+                            <td>{i.amount.toLocaleString("sr-RS")}</td>
+                            <td>{i.date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                <footer className="panel-footer">
-                  Ukupno računa: {filteredInvoices.length} | Ukupan promet: {filteredInvoices.reduce((sum, i) => sum + i.amount, 0).toLocaleString("sr-RS")} RSD
-                </footer>
-              </section>
+                  <footer className="panel-footer">
+                    Ukupno računa: {filteredInvoicesReal.length} | Ukupan promet: {filteredInvoicesReal.reduce((sum, i) => sum + i.amount, 0).toLocaleString("sr-RS")} RSD
+                  </footer>
+                </section>
+              )}
             </div>
           ) : activeTab === "Proizvodnja" ? (
             <div className="production-shell">
@@ -943,9 +1075,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   <section className="panel">
                     <header className="panel-header">
                       <div className="panel-title">Dnevnik proizvodnje</div>
-                      <button className="btn btn-ghost" onClick={fetchProductionAuditLogs} disabled={productionLoading}>
-                        Osveži
-                      </button>
+                      {authUser?.role?.toUpperCase() === "ADMIN" && (
+                        <button className="btn btn-ghost" onClick={fetchProductionAuditLogs} disabled={productionLoading}>
+                          Osveži
+                        </button>
+                      )}
                     </header>
 
                     <div className="log-list">
@@ -1084,9 +1218,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   <section className="panel">
                     <header className="panel-header">
                       <div className="panel-title">Dnevnik prerade</div>
-                      <button className="btn btn-ghost" onClick={fetchProcessingAuditLogs}>
-                        Osveži
-                      </button>
+                      {authUser?.role?.toUpperCase() === "ADMIN" && (
+                        <button className="btn btn-ghost" onClick={fetchProcessingAuditLogs}>
+                          Osveži
+                        </button>
+                      )}
                     </header>
                     <div className="log-list">
                       {processingLogs.map((log) => (
@@ -1275,7 +1411,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </header>
 
                     <div className="catalog-grid">
-                      {catalogSeed.map((item) => (
+                      {salesCatalog.map((item) => (
                         <article key={item.id} className="catalog-card">
                           <div className="catalog-top">
                             <div>
@@ -1286,14 +1422,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                             </div>
                             <div className="catalog-icon">▣</div>
                           </div>
-                          <div className="catalog-price">{item.price.toLocaleString("sr-RS")} RSD</div>
-                          <div className="catalog-stock">Na stanju: {item.stock}</div>
+                          <div className="catalog-price">{(item.volume === 250 ? 13200 : 8900).toLocaleString("sr-RS")} RSD</div>
+                          <div className="catalog-stock">Serijski: {item.serialNumber}</div>
                         </article>
                       ))}
                     </div>
 
                     <footer className="panel-footer">
-                      Ukupno proizvoda u katalogu: {catalogSeed.length}
+                      Ukupno proizvoda u katalogu: {salesCatalog.length}
                     </footer>
                   </section>
                 </div>
@@ -1423,6 +1559,239 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
             <UserManagement userAPI={userAPI} />
           ) : activeTab === "Evidencija" && authUser?.role?.toLowerCase() === "admin" ? (
             <AuditLogViewer auditAPI={auditAPI} />
+          ) : activeTab === "Prodaja" ? (
+            <div className="storage-shell">
+              <div className="storage-tabs">
+                {(["Katalog", "Korpa", "Fakture"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    className={`tab-btn ${salesTab === tab ? "active" : ""}`}
+                    onClick={() => setSalesTab(tab)}
+                  >
+                    {tab}
+                    {tab === "Korpa" && salesCart.length > 0 ? ` (${salesCart.length})` : ""}
+                  </button>
+                ))}
+              </div>
+
+              {salesError && (
+                <div className="notice error" style={{ margin: "8px 16px" }}>{salesError}</div>
+              )}
+              {salesNotice && (
+                <div className="notice success" style={{ margin: "8px 16px" }}>{salesNotice}</div>
+              )}
+
+              {salesTab === "Katalog" ? (
+                <div className="storage-grid">
+                  <section className="panel storage-panel" style={{ gridColumn: "1 / -1" }}>
+                    <header className="storage-header sales-header-blue">
+                      <div className="storage-header-title">Katalog parfema (završeni)</div>
+                      <button className="btn btn-ghost" onClick={fetchSalesCatalog} disabled={salesLoading}>
+                        Osveži
+                      </button>
+                    </header>
+
+                    {salesLoading ? (
+                      <p style={{ padding: 20, textAlign: "center", color: "#888" }}>Učitavanje kataloga...</p>
+                    ) : salesCatalog.length === 0 ? (
+                      <p style={{ padding: 20, textAlign: "center", color: "#888" }}>Nema dostupnih parfema u katalogu.</p>
+                    ) : (
+                      <div className="catalog-grid">
+                        {salesCatalog.map((item) => (
+                          <article key={item.id} className="catalog-card" style={{ cursor: "pointer" }} onClick={() => addToCart(item)}>
+                            <div className="catalog-top">
+                              <div>
+                                <div className="catalog-name">{item.name}</div>
+                                <div className="catalog-meta">
+                                  {item.type} | {item.volume} ml
+                                </div>
+                              </div>
+                              <div className="catalog-icon" style={{ fontSize: "1.5rem" }}>🛒</div>
+                            </div>
+                            <div className="catalog-price">{(item.volume === 250 ? 13200 : 8900).toLocaleString("sr-RS")} RSD</div>
+                            <div className="catalog-stock" style={{ fontSize: "0.8rem", color: "#9ca3af" }}>SN: {item.serialNumber}</div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+
+                    <footer className="panel-footer">
+                      Ukupno u katalogu: {salesCatalog.length} | U korpi: {salesCart.length} stavki
+                    </footer>
+                  </section>
+                </div>
+              ) : salesTab === "Korpa" ? (
+                <div className="storage-grid">
+                  <section className="panel storage-panel">
+                    <header className="storage-header storage-header-orange">
+                      <div className="storage-header-title">Korpa</div>
+                    </header>
+
+                    {salesCart.length === 0 ? (
+                      <p style={{ padding: 20, textAlign: "center", color: "#888" }}>Korpa je prazna. Dodajte parfeme iz kataloga.</p>
+                    ) : (
+                      <div className="table-wrapper">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th>Parfem</th>
+                              <th>Cena (RSD)</th>
+                              <th>Količina</th>
+                              <th>Ukupno (RSD)</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {salesCart.map((item) => (
+                              <tr key={item.perfumeId}>
+                                <td>{item.perfumeName}</td>
+                                <td>{item.unitPrice.toLocaleString("sr-RS")}</td>
+                                <td>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={item.quantity}
+                                    onChange={(e) => updateCartQuantity(item.perfumeId, Number(e.target.value))}
+                                    style={{ width: "60px", padding: "4px", background: "#2a2a2a", color: "#e0e0e0", border: "1px solid #444", borderRadius: 4 }}
+                                  />
+                                </td>
+                                <td>{(item.quantity * item.unitPrice).toLocaleString("sr-RS")}</td>
+                                <td>
+                                  <button className="btn btn-ghost" onClick={() => removeFromCart(item.perfumeId)} style={{ color: "#ef4444" }}>
+                                    ✕
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <footer className="panel-footer">
+                      Ukupno stavki: {salesCart.length} | Ukupan iznos: {cartTotal.toLocaleString("sr-RS")} RSD
+                    </footer>
+                  </section>
+
+                  <section className="panel storage-panel">
+                    <header className="storage-header sales-header-green">
+                      <div className="storage-header-title">Checkout</div>
+                    </header>
+
+                    <div className="production-form" style={{ padding: 16 }}>
+                      <div className="form-grid">
+                        <label>
+                          Tip prodaje
+                          <select
+                            value={salesSaleType}
+                            onChange={(e) => setSalesSaleType(e.target.value)}
+                            style={{ width: "100%", padding: "8px", background: "#2a2a2a", color: "#e0e0e0", border: "1px solid #444", borderRadius: 4 }}
+                          >
+                            <option value="MALOPRODAJA">Maloprodaja</option>
+                            <option value="VELEPRODAJA">Veleprodaja</option>
+                          </select>
+                        </label>
+                        <label>
+                          Način plaćanja
+                          <select
+                            value={salesPaymentMethod}
+                            onChange={(e) => setSalesPaymentMethod(e.target.value)}
+                            style={{ width: "100%", padding: "8px", background: "#2a2a2a", color: "#e0e0e0", border: "1px solid #444", borderRadius: 4 }}
+                          >
+                            <option value="GOTOVINA">Gotovina</option>
+                            <option value="UPLATA_NA_RACUN">Uplata na račun</option>
+                            <option value="KARTICNO">Kartično</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div style={{ marginTop: 16, padding: "12px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #333" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ color: "#9ca3af" }}>Stavki:</span>
+                          <span>{salesCart.length}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ color: "#9ca3af" }}>Bočica ukupno:</span>
+                          <span>{salesCart.reduce((s, c) => s + c.quantity, 0)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "1.1rem", borderTop: "1px solid #444", paddingTop: 8 }}>
+                          <span>Ukupno:</span>
+                          <span>{cartTotal.toLocaleString("sr-RS")} RSD</span>
+                        </div>
+                      </div>
+
+                      <div className="form-actions" style={{ marginTop: 16 }}>
+                        <button
+                          className="btn btn-accent"
+                          onClick={handleCheckout}
+                          disabled={salesCheckoutLoading || salesCart.length === 0}
+                        >
+                          {salesCheckoutLoading ? "Obrađujem..." : "Potvrdi kupovinu"}
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              ) : (
+                <div className="storage-grid">
+                  <section className="panel storage-panel" style={{ gridColumn: "1 / -1" }}>
+                    <header className="storage-header storage-header-purple">
+                      <div className="storage-header-title">Fakture</div>
+                      <button className="btn btn-ghost" onClick={fetchSalesInvoices} disabled={salesLoading}>
+                        Osveži
+                      </button>
+                    </header>
+
+                    {salesLoading ? (
+                      <p style={{ padding: 20, textAlign: "center", color: "#888" }}>Učitavanje faktura...</p>
+                    ) : (
+                      <div className="table-wrapper">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th>ID fakture</th>
+                              <th>Tip prodaje</th>
+                              <th>Način plaćanja</th>
+                              <th>Stavke</th>
+                              <th>Iznos (RSD)</th>
+                              <th>Datum</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {salesInvoices.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} className="text-muted">Nema faktura za prikaz.</td>
+                              </tr>
+                            ) : (
+                              salesInvoices.map((inv) => (
+                                <tr key={inv.id}>
+                                  <td>{inv.id.substring(0, 8)}...</td>
+                                  <td>
+                                    <span className={`status-chip ${inv.saleType === "MALOPRODAJA" ? "status-green" : "status-purple"}`}>
+                                      {saleTypeLabel(inv.saleType)}
+                                    </span>
+                                  </td>
+                                  <td>{paymentLabel(inv.paymentMethod)}</td>
+                                  <td className="text-muted">
+                                    {inv.items.map((it) => `${it.perfumeName} ×${it.quantity}`).join(", ")}
+                                  </td>
+                                  <td>{Number(inv.totalAmount).toLocaleString("sr-RS")}</td>
+                                  <td>{new Date(inv.createdAt).toLocaleDateString("sr-RS")}</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <footer className="panel-footer">
+                      Ukupno faktura: {salesInvoices.length} | Ukupan promet: {salesInvoices.reduce((sum, i) => sum + Number(i.totalAmount), 0).toLocaleString("sr-RS")} RSD
+                    </footer>
+                  </section>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="panel panel-empty">
               <h2>{activeTab}</h2>
