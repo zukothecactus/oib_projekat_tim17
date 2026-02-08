@@ -15,7 +15,9 @@
     "dev:client": "npm run start:client",
     "dev:infrastructure": "concurrently \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\" \"npm run start:audit\" \"npm run start:storage\"",
     "dev:all": "concurrently \"npm run start:client\" \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:user\" \"npm run start:production\" \"npm run start:processing\" \"npm run start:audit\" \"npm run start:storage\"",
-    "clean-dev": "rimraf %APPDATA%/client"
+    "clean-dev": "rimraf %APPDATA%/client",
+    "kill": "powershell -ExecutionPolicy Bypass -File ./kill-ports.ps1",
+    "kill:bat": "call kill-ports.bat"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
