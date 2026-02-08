@@ -10,12 +10,14 @@ export class GatewayService implements IGatewayService {
   private readonly userClient: AxiosInstance;
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
+  private readonly storageClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
     const userBaseURL = process.env.USER_SERVICE_API;
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
+    const storageBaseURL = process.env.STORAGE_SERVICE_API;
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -39,6 +41,12 @@ export class GatewayService implements IGatewayService {
       baseURL: processingBaseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
+    });
+
+    this.storageClient = axios.create({
+      baseURL: storageBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 15000,
     });
   }
 
@@ -108,6 +116,35 @@ export class GatewayService implements IGatewayService {
     status?: string;
   }): Promise<any> {
     const response = await this.processingClient.post("/processing/perfumes", data);
+    return response.data;
+  }
+
+  // Storage microservice
+  async sendToSales(count: number, userRole: string): Promise<any> {
+    const response = await this.storageClient.post("/storage/send-to-sales", { count }, {
+      headers: { "X-User-Role": userRole },
+    });
+    return response.data;
+  }
+
+  async receivePackage(warehouseId: string, packageData: any, userRole: string): Promise<any> {
+    const response = await this.storageClient.post("/storage/receive", { warehouseId, packageData }, {
+      headers: { "X-User-Role": userRole },
+    });
+    return response.data;
+  }
+
+  async listWarehouses(userRole: string): Promise<any> {
+    const response = await this.storageClient.get("/storage/warehouses", {
+      headers: { "X-User-Role": userRole },
+    });
+    return response.data;
+  }
+
+  async getWarehousePackages(warehouseId: string, userRole: string): Promise<any> {
+    const response = await this.storageClient.get(`/storage/warehouses/${warehouseId}/packages`, {
+      headers: { "X-User-Role": userRole },
+    });
     return response.data;
   }
 }

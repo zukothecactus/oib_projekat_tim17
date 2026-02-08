@@ -31,6 +31,12 @@ export class GatewayController {
     // Processing
     this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller"), this.listProcessingPerfumes.bind(this));
     this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller"), this.createProcessingPerfume.bind(this));
+
+    // Storage
+    this.router.post("/storage/send-to-sales", authenticate, authorize("admin", "seller", "sales_manager"), this.sendToSales.bind(this));
+    this.router.post("/storage/receive", authenticate, authorize("admin", "seller", "sales_manager"), this.receivePackage.bind(this));
+    this.router.get("/storage/warehouses", authenticate, authorize("admin", "seller", "sales_manager"), this.listWarehouses.bind(this));
+    this.router.get("/storage/warehouses/:id/packages", authenticate, authorize("admin", "seller", "sales_manager"), this.getWarehousePackages.bind(this));
   }
 
   // Auth
@@ -122,6 +128,48 @@ export class GatewayController {
   private async createProcessingPerfume(req: Request, res: Response): Promise<void> {
     try {
       const result = await this.gatewayService.createProcessingPerfume(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  // Storage
+  private async sendToSales(req: Request, res: Response): Promise<void> {
+    try {
+      const userRole = req.user?.role ?? "";
+      const result = await this.gatewayService.sendToSales(req.body.count, userRole);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async receivePackage(req: Request, res: Response): Promise<void> {
+    try {
+      const userRole = req.user?.role ?? "";
+      const result = await this.gatewayService.receivePackage(req.body.warehouseId, req.body.packageData, userRole);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listWarehouses(req: Request, res: Response): Promise<void> {
+    try {
+      const userRole = req.user?.role ?? "";
+      const result = await this.gatewayService.listWarehouses(userRole);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getWarehousePackages(req: Request, res: Response): Promise<void> {
+    try {
+      const userRole = req.user?.role ?? "";
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getWarehousePackages(id, userRole);
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ success: false, message: (err as Error).message });
