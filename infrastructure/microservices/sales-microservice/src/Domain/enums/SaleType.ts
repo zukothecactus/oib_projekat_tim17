@@ -1,0 +1,4 @@
+export enum SaleType {
+  MALOPRODAJA = "MALOPRODAJA",
+  VELEPRODAJA = "VELEPRODAJA",
+}

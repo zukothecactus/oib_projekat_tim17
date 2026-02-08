@@ -1,4 +1,5 @@
 import { ReactNode, useState, useEffect, createContext } from "react";
+import axios from "axios";
 import { decodeJWT } from "../helpers/decode_jwt";
 import { isTokenExpired } from "../helpers/expiration_jwt_validate";
 import { readValueByKey, removeValueByKey, saveValueByKey } from "../helpers/local_storage";
@@ -13,11 +14,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load token from localStorage on mount
+  // Load token from localStorage on mount and validate against backend
   useEffect(() => {
-    const savedToken = readValueByKey("authToken");
+    const restoreSession = async () => {
+      const savedToken = readValueByKey("authToken");
 
-    if (savedToken) {
+      if (!savedToken) {
+        setIsLoading(false);
+        return;
+      }
+
       if (isTokenExpired(savedToken)) {
         removeValueByKey("authToken");
         setIsLoading(false);
@@ -25,15 +31,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const claims = decodeJWT(savedToken);
-      if (claims) {
+      if (!claims) {
+        removeValueByKey("authToken");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate that the user still exists on the backend
+      try {
+        await axios.get(
+          `${import.meta.env.VITE_GATEWAY_URL}/users/${claims.id}`,
+          { headers: { Authorization: `Bearer ${savedToken}` }, timeout: 5000 }
+        );
+        // User exists — restore session
         setToken(savedToken);
         setUser(claims);
-      } else {
+      } catch {
+        // User no longer exists or token is invalid on backend — clear stale session
+        console.warn("Session expired or user no longer exists. Logging out.");
         removeValueByKey("authToken");
       }
-    }
 
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    restoreSession();
   }, []);
 
   const login = (newToken: string) => {
