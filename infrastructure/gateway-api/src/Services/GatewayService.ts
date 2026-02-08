@@ -49,6 +49,8 @@ export class GatewayService implements IGatewayService {
       baseURL: storageBaseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 15000,
+    });
+
     this.auditClient = axios.create({
       baseURL: auditBaseURL,
       headers: { "Content-Type": "application/json" },
@@ -174,6 +176,9 @@ export class GatewayService implements IGatewayService {
     const response = await this.storageClient.get(`/storage/warehouses/${warehouseId}/packages`, {
       headers: { "X-User-Role": userRole },
     });
+    return response.data;
+  }
+
   // Audit microservice
   async getAllAuditLogs(): Promise<any[]> {
     const response = await this.auditClient.get("/audit/logs");

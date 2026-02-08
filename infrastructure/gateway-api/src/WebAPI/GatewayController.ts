@@ -230,6 +230,9 @@ export class GatewayController {
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
   // Audit
   private async getAllAuditLogs(req: Request, res: Response): Promise<void> {
     try {

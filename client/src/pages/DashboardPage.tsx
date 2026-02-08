@@ -171,11 +171,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   // Available tabs based on user role
   const availableTabs = useMemo(() => {
     const allTabs = ["Pregled", "Proizvodnja", "Prerada", "Pakovanje", "Skladištenje", "Prodaja"] as const;
-    if (user?.role?.toUpperCase() === "ADMIN") {
+    if (authUser?.role?.toUpperCase() === "ADMIN") {
       return allTabs.filter(tab => tab !== "Skladištenje");
     }
     return allTabs;
-  }, [user?.role]);
+  }, [authUser?.role]);
 
   const filteredInvoices = useMemo(() => {
     const q = invoiceQuery.trim().toLowerCase();
