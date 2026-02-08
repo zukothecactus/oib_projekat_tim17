@@ -14,6 +14,12 @@ import { StorageAPI } from "./api/storage/StorageAPI";
 import { IStorageAPI } from "./api/storage/IStorageAPI";
 import { AuditAPI } from "./api/audit/AuditAPI";
 import { IAuditAPI } from "./api/audit/IAuditAPI";
+import { SalesAPI } from "./api/sales/SalesAPI";
+import { ISalesAPI } from "./api/sales/ISalesAPI";
+import { AnalyticsAPI } from "./api/analytics/AnalyticsAPI";
+import { IAnalyticsAPI } from "./api/analytics/IAnalyticsAPI";
+import { PerformanceAPI } from "./api/performance/PerformanceAPI";
+import { IPerformanceAPI } from "./api/performance/IPerformanceAPI";
 
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
@@ -21,6 +27,9 @@ const plant_api: IPlantAPI = new PlantAPI();
 const processing_api: IProcessingAPI = new ProcessingAPI();
 const storage_api: IStorageAPI = new StorageAPI();
 const audit_api: IAuditAPI = new AuditAPI();
+const sales_api: ISalesAPI = new SalesAPI();
+const analytics_api: IAnalyticsAPI = new AnalyticsAPI();
+const performance_api: IPerformanceAPI = new PerformanceAPI();
 
 function App() {
   return (
@@ -30,7 +39,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute requiredRole="admin,seller,sales_manager">
-              <DashboardPage userAPI={user_api} plantAPI={plant_api} processingAPI={processing_api}  storageAPI={storage_api} auditAPI={audit_api} />
+              <DashboardPage userAPI={user_api} plantAPI={plant_api} processingAPI={processing_api}  storageAPI={storage_api} auditAPI={audit_api} salesAPI={sales_api} analyticsAPI={analytics_api} performanceAPI={performance_api} />
             </ProtectedRoute>
           }
         />

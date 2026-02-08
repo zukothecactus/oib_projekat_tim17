@@ -37,6 +37,12 @@ export interface IGatewayService {
   receivePackage(warehouseId: string, packageData: any, userRole: string): Promise<any>;
   listWarehouses(userRole: string): Promise<any>;
   getWarehousePackages(warehouseId: string, userRole: string): Promise<any>;
+  // Sales
+  getSalesCatalog(): Promise<any>;
+  purchaseSales(data: { items: { perfumeId: string; quantity: number }[]; saleType: string; paymentMethod: string }): Promise<any>;
+  listSalesInvoices(): Promise<any>;
+  getSalesInvoiceById(id: string): Promise<any>;
+
   // Audit
   getAllAuditLogs(): Promise<any[]>;
   getAuditLogById(id: string): Promise<any>;
@@ -44,4 +50,19 @@ export interface IGatewayService {
   updateAuditLog(id: string, data: { type?: string; description?: string }): Promise<any>;
   deleteAuditLog(id: string): Promise<any>;
   searchAuditLogs(query: { type?: string; keyword?: string; dateFrom?: string; dateTo?: string }): Promise<any[]>;
+
+  // Analytics
+  recordAnalyticsSale(data: any): Promise<any>;
+  getAnalyticsSales(criteria: string): Promise<any>;
+  getAnalyticsTrend(): Promise<any>;
+  getAnalyticsTop10Perfumes(): Promise<any>;
+  getAnalyticsTop10Revenue(): Promise<any>;
+  generateAnalyticsReport(type: string): Promise<any>;
+  listAnalyticsReports(): Promise<any>;
+  getAnalyticsReportById(id: string): Promise<any>;
+
+  // Performance
+  runPerformanceSimulation(packageCount: number): Promise<any>;
+  listPerformanceReports(): Promise<any>;
+  getPerformanceReportById(id: string): Promise<any>;
 }

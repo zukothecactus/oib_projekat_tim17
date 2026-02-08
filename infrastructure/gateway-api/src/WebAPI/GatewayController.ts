@@ -34,12 +34,19 @@ export class GatewayController {
     // Processing
     this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.listProcessingPerfumes.bind(this));
     this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.createProcessingPerfume.bind(this));
-    
+
     // Storage
     this.router.post("/storage/send-to-sales", authenticate, authorize("admin", "seller", "sales_manager"), this.sendToSales.bind(this));
     this.router.post("/storage/receive", authenticate, authorize("admin", "seller", "sales_manager"), this.receivePackage.bind(this));
     this.router.get("/storage/warehouses", authenticate, authorize("admin", "seller", "sales_manager"), this.listWarehouses.bind(this));
     this.router.get("/storage/warehouses/:id/packages", authenticate, authorize("admin", "seller", "sales_manager"), this.getWarehousePackages.bind(this));
+
+    // Sales
+    this.router.get("/sales/catalog", authenticate, authorize("seller", "sales_manager"), this.getSalesCatalog.bind(this));
+    this.router.post("/sales/purchase", authenticate, authorize("seller", "sales_manager"), this.purchaseSales.bind(this));
+    this.router.get("/sales/invoices", authenticate, authorize("seller", "sales_manager"), this.listSalesInvoices.bind(this));
+    this.router.get("/sales/invoices/:id", authenticate, authorize("seller", "sales_manager"), this.getSalesInvoiceById.bind(this));
+
     
     // Audit (read = all authenticated, write = admin only)
     this.router.get("/audit/logs/search", authenticate, this.searchAuditLogs.bind(this));
@@ -48,6 +55,21 @@ export class GatewayController {
     this.router.post("/audit/logs", authenticate, authorize("admin"), this.createAuditLog.bind(this));
     this.router.put("/audit/logs/:id", authenticate, authorize("admin"), this.updateAuditLog.bind(this));
     this.router.delete("/audit/logs/:id", authenticate, authorize("admin"), this.deleteAuditLog.bind(this));
+
+    // Analytics (admin only)
+    this.router.post("/analytics/record-sale", authenticate, authorize("admin"), this.recordAnalyticsSale.bind(this));
+    this.router.get("/analytics/sales", authenticate, authorize("admin"), this.getAnalyticsSales.bind(this));
+    this.router.get("/analytics/trend", authenticate, authorize("admin"), this.getAnalyticsTrend.bind(this));
+    this.router.get("/analytics/top10-perfumes", authenticate, authorize("admin"), this.getAnalyticsTop10Perfumes.bind(this));
+    this.router.get("/analytics/top10-revenue", authenticate, authorize("admin"), this.getAnalyticsTop10Revenue.bind(this));
+    this.router.post("/analytics/reports/generate", authenticate, authorize("admin"), this.generateAnalyticsReport.bind(this));
+    this.router.get("/analytics/reports", authenticate, authorize("admin"), this.listAnalyticsReports.bind(this));
+    this.router.get("/analytics/reports/:id", authenticate, authorize("admin"), this.getAnalyticsReportById.bind(this));
+
+    // Performance (admin only)
+    this.router.post("/performance/simulate", authenticate, authorize("admin"), this.runPerformanceSimulation.bind(this));
+    this.router.get("/performance/reports", authenticate, authorize("admin"), this.listPerformanceReports.bind(this));
+    this.router.get("/performance/reports/:id", authenticate, authorize("admin"), this.getPerformanceReportById.bind(this));
   }
 
   // Auth
@@ -91,7 +113,6 @@ export class GatewayController {
         res.status(401).json({ message: "You can only access your own data!" });
         return;
       }
-
       const user = await this.gatewayService.getUserById(id);
       res.status(200).json(user);
     } catch (err) {
@@ -233,6 +254,44 @@ export class GatewayController {
     }
   }
 
+  // Sales
+  private async getSalesCatalog(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getSalesCatalog();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async purchaseSales(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.purchaseSales(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listSalesInvoices(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listSalesInvoices();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getSalesInvoiceById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getSalesInvoiceById(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
   // Audit
   private async getAllAuditLogs(req: Request, res: Response): Promise<void> {
     try {
@@ -299,6 +358,111 @@ export class GatewayController {
       res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  // Analytics
+  private async recordAnalyticsSale(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.recordAnalyticsSale(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsSales(req: Request, res: Response): Promise<void> {
+    try {
+      const criteria = (req.query.criteria as string) ?? "month";
+      const result = await this.gatewayService.getAnalyticsSales(criteria);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsTrend(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getAnalyticsTrend();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsTop10Perfumes(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getAnalyticsTop10Perfumes();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsTop10Revenue(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.getAnalyticsTop10Revenue();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async generateAnalyticsReport(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.generateAnalyticsReport(req.body.type);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listAnalyticsReports(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listAnalyticsReports();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getAnalyticsReportById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getAnalyticsReportById(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  // Performance
+  private async runPerformanceSimulation(req: Request, res: Response): Promise<void> {
+    try {
+      const { packageCount } = req.body;
+      const result = await this.gatewayService.runPerformanceSimulation(packageCount);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async listPerformanceReports(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.gatewayService.listPerformanceReports();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  }
+
+  private async getPerformanceReportById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const result = await this.gatewayService.getPerformanceReportById(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
     }
   }
 

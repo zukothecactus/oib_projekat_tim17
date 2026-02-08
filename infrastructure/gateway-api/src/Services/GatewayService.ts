@@ -11,7 +11,10 @@ export class GatewayService implements IGatewayService {
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
   private readonly storageClient: AxiosInstance;
+  private readonly salesClient: AxiosInstance;
   private readonly auditClient: AxiosInstance;
+  private readonly analyticsClient: AxiosInstance;
+  private readonly performanceClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
@@ -19,7 +22,10 @@ export class GatewayService implements IGatewayService {
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
     const storageBaseURL = process.env.STORAGE_SERVICE_API;
+    const salesBaseURL = process.env.SALES_SERVICE_API;
     const auditBaseURL = process.env.AUDIT_SERVICE_API;
+    const analyticsBaseURL = process.env.ANALYTICS_SERVICE_API;
+    const performanceBaseURL = process.env.PERFORMANCE_SERVICE_API;
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -51,10 +57,28 @@ export class GatewayService implements IGatewayService {
       timeout: 15000,
     });
 
+    this.salesClient = axios.create({
+      baseURL: salesBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
+
     this.auditClient = axios.create({
       baseURL: auditBaseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
+    });
+
+    this.analyticsClient = axios.create({
+      baseURL: analyticsBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 10000,
+    });
+
+    this.performanceClient = axios.create({
+      baseURL: performanceBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 15000,
     });
   }
 
@@ -179,6 +203,27 @@ export class GatewayService implements IGatewayService {
     return response.data;
   }
 
+  // Sales microservice
+  async getSalesCatalog(): Promise<any> {
+    const response = await this.salesClient.get("/sales/catalog");
+    return response.data;
+  }
+
+  async purchaseSales(data: { items: { perfumeId: string; quantity: number }[]; saleType: string; paymentMethod: string }): Promise<any> {
+    const response = await this.salesClient.post("/sales/purchase", data);
+    return response.data;
+  }
+
+  async listSalesInvoices(): Promise<any> {
+    const response = await this.salesClient.get("/sales/invoices");
+    return response.data;
+  }
+
+  async getSalesInvoiceById(id: string): Promise<any> {
+    const response = await this.salesClient.get(`/sales/invoices/${id}`);
+    return response.data;
+  }
+
   // Audit microservice
   async getAllAuditLogs(): Promise<any[]> {
     const response = await this.auditClient.get("/audit/logs");
@@ -207,6 +252,63 @@ export class GatewayService implements IGatewayService {
 
   async searchAuditLogs(query: { type?: string; keyword?: string; dateFrom?: string; dateTo?: string }): Promise<any[]> {
     const response = await this.auditClient.get("/audit/logs/search", { params: query });
+    return response.data;
+  }
+
+  // Analytics microservice
+  async recordAnalyticsSale(data: any): Promise<any> {
+    const response = await this.analyticsClient.post("/analytics/record-sale", data);
+    return response.data;
+  }
+
+  async getAnalyticsSales(criteria: string): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/sales", { params: { criteria } });
+    return response.data;
+  }
+
+  async getAnalyticsTrend(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/trend");
+    return response.data;
+  }
+
+  async getAnalyticsTop10Perfumes(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/top10-perfumes");
+    return response.data;
+  }
+
+  async getAnalyticsTop10Revenue(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/top10-revenue");
+    return response.data;
+  }
+
+  async generateAnalyticsReport(type: string): Promise<any> {
+    const response = await this.analyticsClient.post("/analytics/reports/generate", { type });
+    return response.data;
+  }
+
+  async listAnalyticsReports(): Promise<any> {
+    const response = await this.analyticsClient.get("/analytics/reports");
+    return response.data;
+  }
+
+  async getAnalyticsReportById(id: string): Promise<any> {
+    const response = await this.analyticsClient.get(`/analytics/reports/${id}`);
+    return response.data;
+  }
+
+  // Performance microservice
+  async runPerformanceSimulation(packageCount: number): Promise<any> {
+    const response = await this.performanceClient.post("/performance/simulate", { packageCount });
+    return response.data;
+  }
+
+  async listPerformanceReports(): Promise<any> {
+    const response = await this.performanceClient.get("/performance/reports");
+    return response.data;
+  }
+
+  async getPerformanceReportById(id: string): Promise<any> {
+    const response = await this.performanceClient.get(`/performance/reports/${id}`);
     return response.data;
   }
 }
