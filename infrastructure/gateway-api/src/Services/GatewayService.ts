@@ -10,6 +10,7 @@ export class GatewayService implements IGatewayService {
   private readonly userClient: AxiosInstance;
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
+  private readonly packagingClient: AxiosInstance;
   private readonly storageClient: AxiosInstance;
   private readonly salesClient: AxiosInstance;
   private readonly auditClient: AxiosInstance;
@@ -21,6 +22,7 @@ export class GatewayService implements IGatewayService {
     const userBaseURL = process.env.USER_SERVICE_API;
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
+    const packagingBaseURL = process.env.PACKAGING_SERVICE_API;
     const storageBaseURL = process.env.STORAGE_SERVICE_API;
     const salesBaseURL = process.env.SALES_SERVICE_API;
     const auditBaseURL = process.env.AUDIT_SERVICE_API;
@@ -51,6 +53,11 @@ export class GatewayService implements IGatewayService {
       timeout: 5000,
     });
 
+    this.packagingClient = axios.create({
+      baseURL: packagingBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
     this.storageClient = axios.create({
       baseURL: storageBaseURL,
       headers: { "Content-Type": "application/json" },
@@ -169,11 +176,26 @@ export class GatewayService implements IGatewayService {
     serialNumber?: string;
     expiresAt: string;
     status?: string;
+    plantId?: string;
   }): Promise<any> {
     const response = await this.processingClient.post("/processing/perfumes", data);
     return response.data;
   }
 
+  async startProcessing(data: {
+    perfumeName: string;
+    perfumeType: string;
+    bottleCount: number;
+    bottleVolume: number;
+    latinName: string;
+  }): Promise<any> {
+    const response = await this.processingClient.post("/processing/start-processing", data);
+    return response.data;
+  }
+
+  async getAvailablePerfumes(type: string, count: number): Promise<any> {
+    const response = await this.processingClient.get("/processing/perfumes/available", {
+      params: { type, count },
   // Storage microservice
   async sendToSales(count: number, userRole: string): Promise<any> {
     const response = await this.storageClient.post("/storage/send-to-sales", { count }, {
@@ -196,6 +218,24 @@ export class GatewayService implements IGatewayService {
     return response.data;
   }
 
+  // Packaging microservice
+  async packPerfumes(data: { name: string; senderAddress: string; perfumeType: string; count: number; perfumeIds?: string[] }): Promise<any> {
+    const response = await this.packagingClient.post("/packaging/pack", data);
+    return response.data;
+  }
+
+  async sendToWarehouse(data: { packageId: string; warehouseId: string }): Promise<any> {
+    const response = await this.packagingClient.post("/packaging/send", data);
+    return response.data;
+  }
+
+  async listPackages(): Promise<any> {
+    const response = await this.packagingClient.get("/packaging/packages");
+    return response.data;
+  }
+
+  async getPackageById(id: string): Promise<any> {
+    const response = await this.packagingClient.get(`/packaging/packages/${id}`);
   async getWarehousePackages(warehouseId: string, userRole: string): Promise<any> {
     const response = await this.storageClient.get(`/storage/warehouses/${warehouseId}/packages`, {
       headers: { "X-User-Role": userRole },

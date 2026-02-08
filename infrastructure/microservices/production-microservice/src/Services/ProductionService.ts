@@ -44,6 +44,15 @@ export class ProductionService implements IProductionService {
     return candidates;
   }
 
+  public async processByLatinName(latinName: string, count: number): Promise<Plant[]> {
+    const candidates = await this.repo.find({ where: { latinName, status: PlantStatus.UBRANA }, take: count });
+    for (const p of candidates) {
+      p.status = PlantStatus.PRERADJENA;
+      await this.repo.save(p);
+    }
+    return candidates;
+  }
+
   public async listPlants(): Promise<Plant[]> {
     return await this.repo.find();
   }

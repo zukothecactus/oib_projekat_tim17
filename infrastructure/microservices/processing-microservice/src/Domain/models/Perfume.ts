@@ -25,6 +25,9 @@ export class Perfume {
   @Column({ type: 'enum', enum: PerfumeStatus })
   status!: PerfumeStatus;
 
+  @Column({ name: 'plant_id', type: 'varchar', length: 36, nullable: true })
+  plantId!: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 }

@@ -16,6 +16,7 @@ export class ProductionController {
     this.router.post('/production/plant', this.plant.bind(this));
     this.router.post('/production/change-strength', this.changeStrength.bind(this));
     this.router.post('/production/harvest', this.harvest.bind(this));
+    this.router.post('/production/process-plants', this.processPlants.bind(this));
     this.router.get('/production/plants', this.listPlants.bind(this));
   }
 
@@ -54,6 +55,19 @@ export class ProductionController {
 
       const harvested = await this.service.harvestByLatinName(data.latinName, data.count);
       res.status(200).json({ success: true, harvested });
+    } catch (err) {
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
+  }
+
+  private async processPlants(req: Request, res: Response): Promise<void> {
+    try {
+      const data = req.body;
+      const v = validateHarvest(data);
+      if (!v.success) { res.status(400).json(v); return; }
+
+      const processed = await this.service.processByLatinName(data.latinName, data.count);
+      res.status(200).json({ success: true, processed });
     } catch (err) {
       res.status(500).json({ success: false, message: 'Server error' });
     }

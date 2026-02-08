@@ -30,7 +30,22 @@ export interface IGatewayService {
     serialNumber?: string;
     expiresAt: string;
     status?: string;
+    plantId?: string;
   }): Promise<any>;
+  startProcessing(data: {
+    perfumeName: string;
+    perfumeType: string;
+    bottleCount: number;
+    bottleVolume: number;
+    latinName: string;
+  }): Promise<any>;
+  getAvailablePerfumes(type: string, count: number): Promise<any>;
+
+  // Packaging
+  packPerfumes(data: { name: string; senderAddress: string; perfumeType: string; count: number; perfumeIds?: string[] }): Promise<any>;
+  sendToWarehouse(data: { packageId: string; warehouseId: string }): Promise<any>;
+  listPackages(): Promise<any>;
+  getPackageById(id: string): Promise<any>;
 
   // Storage
   sendToSales(count: number, userRole: string): Promise<any>;
