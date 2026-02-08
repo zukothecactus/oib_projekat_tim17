@@ -24,7 +24,7 @@ export class StorageController {
    * Other roles   → WarehouseCenterService   (exactly 1 package, 2.5s delay)
    */
   private getService(req: Request): IStorageService {
-    const role = req.headers['x-user-role'] as string;
+    const role = ((req.headers['x-user-role'] as string) || '').toUpperCase();
     const service: IStorageService = role === 'SALES_MANAGER'
       ? new DistributionCenterService(this.warehouseRepo, this.storedPkgRepo)
       : new WarehouseCenterService(this.warehouseRepo, this.storedPkgRepo);

@@ -6,6 +6,7 @@ import { sendAuditLog } from "../utils/AuditClient";
 
 const PROCESSING_API = process.env.PROCESSING_SERVICE_API || "http://localhost:5003/api/v1";
 const STORAGE_API = process.env.STORAGE_SERVICE_API || "http://localhost:5006/api/v1";
+const ANALYTICS_API = process.env.ANALYTICS_SERVICE_API || "http://localhost:5008/api/v1";
 
 export class SalesService implements ISalesService {
   constructor(private readonly invoiceRepo: Repository<Invoice>) {}
@@ -91,6 +92,20 @@ export class SalesService implements ISalesService {
       "INFO",
       `Kreirana faktura ${saved.id}: ${data.saleType}, ${data.paymentMethod}, iznos ${totalAmount} RSD`
     );
+
+    // Pošalji podatke o prodaji analitičkom mikroservisu
+    try {
+      await axios.post(`${ANALYTICS_API}/analytics/record-sale`, {
+        invoiceId: saved.id,
+        saleType: data.saleType,
+        paymentMethod: data.paymentMethod,
+        items: invoiceItems,
+        totalAmount,
+        saleDate: new Date().toISOString(),
+      });
+    } catch (err) {
+      sendAuditLog("WARNING", `Nije uspjelo slanje podataka analitici za fakturu ${saved.id}`);
+    }
 
     return saved;
   }

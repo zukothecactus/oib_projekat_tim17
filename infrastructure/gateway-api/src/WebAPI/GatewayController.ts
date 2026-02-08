@@ -33,8 +33,8 @@ export class GatewayController {
 
     // Processing
     this.router.get("/processing/perfumes/available", authenticate, authorize("admin", "seller", "sales_manager"), this.getAvailablePerfumes.bind(this));
-    this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller"), this.listProcessingPerfumes.bind(this));
-    this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller"), this.createProcessingPerfume.bind(this));
+    this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.listProcessingPerfumes.bind(this));
+    this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.createProcessingPerfume.bind(this));
     this.router.post("/processing/start-processing", authenticate, authorize("admin", "seller", "sales_manager"), this.startProcessing.bind(this));
 
     // Packaging
@@ -42,8 +42,6 @@ export class GatewayController {
     this.router.post("/packaging/send", authenticate, authorize("admin", "seller", "sales_manager"), this.sendToWarehouse.bind(this));
     this.router.get("/packaging/packages", authenticate, authorize("admin", "seller", "sales_manager"), this.listPackages.bind(this));
     this.router.get("/packaging/packages/:id", authenticate, authorize("admin", "seller", "sales_manager"), this.getPackageById.bind(this));
-    this.router.get("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.listProcessingPerfumes.bind(this));
-    this.router.post("/processing/perfumes", authenticate, authorize("admin", "seller", "sales_manager"), this.createProcessingPerfume.bind(this));
 
     // Storage
     this.router.post("/storage/send-to-sales", authenticate, authorize("admin", "seller", "sales_manager"), this.sendToSales.bind(this));
