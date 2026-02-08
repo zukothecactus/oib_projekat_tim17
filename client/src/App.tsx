@@ -10,11 +10,14 @@ import { PlantAPI } from "./api/plants/PlantAPI";
 import { IPlantAPI } from "./api/plants/IPlantAPI";
 import { ProcessingAPI } from "./api/processing/ProcessingAPI";
 import { IProcessingAPI } from "./api/processing/IProcessingAPI";
+import { PackagingAPI } from "./api/packaging/PackagingAPI";
+import { IPackagingAPI } from "./api/packaging/IPackagingAPI";
 
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
 const plant_api: IPlantAPI = new PlantAPI();
 const processing_api: IProcessingAPI = new ProcessingAPI();
+const packaging_api: IPackagingAPI = new PackagingAPI();
 
 function App() {
   return (
@@ -24,7 +27,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute requiredRole="admin,seller">
-              <DashboardPage userAPI={user_api} plantAPI={plant_api} processingAPI={processing_api} />
+              <DashboardPage userAPI={user_api} plantAPI={plant_api} processingAPI={processing_api} packagingAPI={packaging_api} />
             </ProtectedRoute>
           }
         />

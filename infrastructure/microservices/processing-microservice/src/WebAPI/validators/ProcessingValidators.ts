@@ -22,5 +22,30 @@ export function validatePerfumeCreate(data: any): { success: boolean; message?: 
   if (serialNumber && typeof serialNumber !== "string") {
     return { success: false, message: "Invalid serial number" };
   }
+  const { plantId } = data;
+  if (plantId !== undefined && plantId !== null && typeof plantId !== "string") {
+    return { success: false, message: "Invalid plantId" };
+  }
+  return { success: true };
+}
+
+export function validateStartProcessing(data: any): { success: boolean; message?: string } {
+  if (!data) return { success: false, message: "No data" };
+  const { perfumeName, perfumeType, bottleCount, bottleVolume, latinName } = data;
+  if (!perfumeName || typeof perfumeName !== "string") {
+    return { success: false, message: "Missing or invalid perfumeName" };
+  }
+  if (!perfumeType || !Object.values(PerfumeType).includes(perfumeType)) {
+    return { success: false, message: "Invalid perfumeType" };
+  }
+  if (typeof bottleCount !== "number" || bottleCount < 1 || !Number.isInteger(bottleCount)) {
+    return { success: false, message: "Invalid bottleCount" };
+  }
+  if (bottleVolume !== 150 && bottleVolume !== 250) {
+    return { success: false, message: "Invalid bottleVolume (must be 150 or 250)" };
+  }
+  if (!latinName || typeof latinName !== "string") {
+    return { success: false, message: "Missing or invalid latinName" };
+  }
   return { success: true };
 }

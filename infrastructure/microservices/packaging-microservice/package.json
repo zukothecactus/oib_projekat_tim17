@@ -1,11 +1,12 @@
 {
-  "name": "processing-microservice",
+  "name": "packaging-microservice",
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
     "start": "ts-node --transpile-only ./src/index.ts",
     "dev": "nodemon --exec ts-node --transpile-only ./src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "seed": "ts-node --transpile-only ./src/Database/seeds/seedRunner.ts"
   },
   "dependencies": {
     "axios": "^1.13.5",

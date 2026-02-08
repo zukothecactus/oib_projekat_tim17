@@ -34,6 +34,7 @@ export class ProcessingAPI implements IProcessingAPI {
       serialNumber?: string;
       expiresAt: string;
       status?: string;
+      plantId?: string;
     },
     token: string
   ): Promise<PerfumeDTO> {
@@ -43,5 +44,35 @@ export class ProcessingAPI implements IProcessingAPI {
       { headers: this.getAuthHeaders(token) }
     );
     return response.data.perfume;
+  }
+
+  async startProcessing(
+    data: {
+      perfumeName: string;
+      perfumeType: string;
+      bottleCount: number;
+      bottleVolume: number;
+      latinName: string;
+    },
+    token: string
+  ): Promise<PerfumeDTO[]> {
+    const response: AxiosResponse<{ perfumes: PerfumeDTO[] }> = await this.axiosInstance.post(
+      "/processing/start-processing",
+      data,
+      { headers: this.getAuthHeaders(token) }
+    );
+    return response.data.perfumes ?? [];
+  }
+
+  async getAvailablePerfumes(
+    type: string,
+    count: number,
+    token: string
+  ): Promise<PerfumeDTO[]> {
+    const response: AxiosResponse<{ list: PerfumeDTO[] }> = await this.axiosInstance.get(
+      "/processing/perfumes/available",
+      { params: { type, count }, headers: this.getAuthHeaders(token) }
+    );
+    return response.data.list ?? [];
   }
 }

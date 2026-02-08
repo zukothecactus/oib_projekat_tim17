@@ -9,5 +9,6 @@ export type PerfumeDTO = {
   serialNumber: string;
   expiresAt: string;
   status: PerfumeStatus;
+  plantId: string;
   createdAt: string;
 };

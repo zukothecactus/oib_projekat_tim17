@@ -4,6 +4,8 @@ import { IPlantAPI } from "../api/plants/IPlantAPI";
 import { PlantDTO, PlantStatus } from "../models/plants/PlantDTO";
 import { IProcessingAPI } from "../api/processing/IProcessingAPI";
 import { PerfumeDTO, type PerfumeStatus, type PerfumeType } from "../models/processing/PerfumeDTO";
+import { IPackagingAPI } from "../api/packaging/IPackagingAPI";
+import { PackageDTO, type PackageStatus as PackageStatusType } from "../models/packaging/PackageDTO";
 import { DashboardNavbar } from "../components/dashboard/navbar/Navbar";
 import { useAuth } from "../hooks/useAuthHook";
 
@@ -11,6 +13,7 @@ export type DashboardPageProps = {
   userAPI: IUserAPI;
   plantAPI: IPlantAPI;
   processingAPI: IProcessingAPI;
+  packagingAPI: IPackagingAPI;
 };
 
 type PlantStatusLabel = "Posađena" | "Ubrana" | "Prerađena";
@@ -42,14 +45,6 @@ type Warehouse = {
 
 type PackageStatus = "Spakovana" | "Poslata";
 
-type PackageRow = {
-  id: string;
-  sender: string;
-  perfumeCount: number;
-  warehouse: string;
-  status: PackageStatus;
-};
-
 type CatalogItem = {
   id: string;
   name: string;
@@ -57,20 +52,6 @@ type CatalogItem = {
   volume: number;
   price: number;
   stock: number;
-};
-
-type PackageItem = {
-  id: string;
-  perfumeName: string;
-  volume: number;
-  count: number;
-};
-
-type PackagingRow = {
-  id: string;
-  warehouse: string;
-  status: PackageStatus;
-  items: PackageItem[];
 };
 
 type ProductionLogType = "INFO" | "WARNING" | "ERROR";
@@ -90,37 +71,10 @@ const invoicesSeed: InvoiceRow[] = [
   { id: "FR-2025-003", saleType: "Maloprodaja", payment: "Gotovina", amount: 8900, date: "21.10.2025" },
 ];
 
-
 const warehousesSeed: Warehouse[] = [
-  {
-    id: "wh-1",
-    name: "Centralno skladište",
-    address: "Pariz, Rue de la Paix 45",
-    capacity: 100,
-    used: 67,
-  },
-  {
-    id: "wh-2",
-    name: "Severno skladište",
-    address: "Pariz, Avenue Foch 12",
-    capacity: 75,
-    used: 45,
-  },
-  {
-    id: "wh-3",
-    name: "Južno skladište",
-    address: "Pariz, Blvd. Saint-Germain 89",
-    capacity: 50,
-    used: 28,
-  },
-];
-
-const packagesSeed: PackageRow[] = [
-  { id: "AMB-2025-001", sender: "Centar za pakovanje 1", perfumeCount: 24, warehouse: "Centralno skladište", status: "Spakovana" },
-  { id: "AMB-2025-002", sender: "Centar za pakovanje 1", perfumeCount: 18, warehouse: "Centralno skladište", status: "Poslata" },
-  { id: "AMB-2025-003", sender: "Centar za pakovanje 2", perfumeCount: 30, warehouse: "Severno skladište", status: "Spakovana" },
-  { id: "AMB-2025-004", sender: "Centar za pakovanje 2", perfumeCount: 12, warehouse: "Severno skladište", status: "Spakovana" },
-  { id: "AMB-2025-005", sender: "Centar za pakovanje 3", perfumeCount: 20, warehouse: "Južno skladište", status: "Poslata" },
+  { id: "wh-1", name: "Centralno skladište", address: "Pariz, Rue de la Paix 45", capacity: 100, used: 67 },
+  { id: "wh-2", name: "Severno skladište", address: "Pariz, Avenue Foch 12", capacity: 75, used: 45 },
+  { id: "wh-3", name: "Južno skladište", address: "Pariz, Blvd. Saint-Germain 89", capacity: 50, used: 28 },
 ];
 
 const catalogSeed: CatalogItem[] = [
@@ -130,51 +84,26 @@ const catalogSeed: CatalogItem[] = [
   { id: "cat-4", name: "Jasmin De Nuj", type: "Kolonjska voda", volume: 150, price: 9500, stock: 38 },
 ];
 
-const packagingSeed: PackagingRow[] = [
-  {
-    id: "AMB-2025-101",
-    warehouse: "Centralno skladište",
-    status: "Spakovana",
-    items: [
-      { id: "pkg-1", perfumeName: "Rosa Mistika", volume: 250, count: 12 },
-      { id: "pkg-2", perfumeName: "Lavander Noir", volume: 150, count: 18 },
-    ],
-  },
-  {
-    id: "AMB-2025-102",
-    warehouse: "Severno skladište",
-    status: "Poslata",
-    items: [
-      { id: "pkg-3", perfumeName: "Bergamot Esenc", volume: 250, count: 10 },
-      { id: "pkg-4", perfumeName: "Jasmin De Nuj", volume: 150, count: 16 },
-    ],
-  },
-  {
-    id: "AMB-2025-103",
-    warehouse: "Južno skladište",
-    status: "Spakovana",
-    items: [
-      { id: "pkg-5", perfumeName: "Lavander Noir", volume: 150, count: 20 },
-    ],
-  },
-];
-
-export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, packagingAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja">("Pregled");
   const [plantQuery, setPlantQuery] = useState("");
   const [invoiceQuery, setInvoiceQuery] = useState("");
-  const [productionTab, setProductionTab] = useState<"Servis proizvodnje" | "Servis prerade">("Servis proizvodnje");
   const [productionAction, setProductionAction] = useState<"plant" | "harvest" | "change-strength">("plant");
   const [storageTab, setStorageTab] = useState<"Servis skladištenja" | "Servis prodaje">("Servis skladištenja");
   const [packagingForm, setPackagingForm] = useState({
-    perfumeName: "",
-    volume: 150,
-    count: 1,
-    warehouse: "Centralno skladište",
+    name: "",
+    senderAddress: "",
   });
-  const [selectedPackageId, setSelectedPackageId] = useState(packagingSeed[0]?.id ?? "");
+  const [packages, setPackages] = useState<PackageDTO[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState("");
+  const [availablePerfumes, setAvailablePerfumes] = useState<PerfumeDTO[]>([]);
+  const [selectedPerfumeIds, setSelectedPerfumeIds] = useState<Set<string>>(new Set());
+  const [packagingLoading, setPackagingLoading] = useState(false);
+  const [packagingError, setPackagingError] = useState<string | null>(null);
+  const [packagingNotice, setPackagingNotice] = useState<string | null>(null);
+  const [sendWarehouseId, setSendWarehouseId] = useState("wh-1");
   const [productionPlants, setProductionPlants] = useState<PlantDTO[]>([]);
   const [productionLoading, setProductionLoading] = useState(false);
   const [productionError, setProductionError] = useState<string | null>(null);
@@ -188,12 +117,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     { id: "log-3", type: "WARNING", message: "Upozorenje: Jačina ulja prešla 4.0", time: "14:15" },
   ]);
   const [processingForm, setProcessingForm] = useState({
-    name: "",
-    type: "Parfem" as PerfumeType,
-    volume: 150,
-    serial: "",
-    expiresAt: "",
-    status: "U izradi" as PerfumeStatus,
+    perfumeName: "",
+    perfumeType: "Parfem" as PerfumeType,
+    bottleCount: 1,
+    bottleVolume: 150 as 150 | 250,
+    latinName: "",
   });
   const [processingLogs, setProcessingLogs] = useState<ProductionLog[]>([
     { id: "proc-1", type: "INFO", message: "Pokrenuta prerada: Lavande Noire", time: "12:05" },
@@ -236,12 +164,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     return "Prerađena";
   }
 
-  function statusClass(status: PlantStatus): string {
-    if (status === "POSADJENA") return "status-green";
-    if (status === "UBRANA") return "status-yellow";
-    return "status-purple";
-  }
-
   const processingStatusClass = (status: PerfumeStatus) => {
     if (status === "Zavrseno") return "status-green";
     return "status-yellow";
@@ -254,8 +176,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       setProcessingNotice(null);
       return;
     }
-    if (!processingForm.name.trim() || !processingForm.expiresAt.trim()) {
-      setProcessingError("Popunite naziv i rok trajanja.");
+    if (!processingForm.perfumeName.trim()) {
+      setProcessingError("Popunite naziv parfema.");
+      setProcessingNotice(null);
+      return;
+    }
+    if (!processingForm.latinName) {
+      setProcessingError("Izaberite biljku za preradu.");
+      setProcessingNotice(null);
+      return;
+    }
+    if (processingForm.bottleCount < 1) {
+      setProcessingError("Broj bočica mora biti bar 1.");
       setProcessingNotice(null);
       return;
     }
@@ -264,44 +196,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     setProcessingError(null);
     setProcessingNotice(null);
     try {
-      await processingAPI.createPerfume(
+      const created = await processingAPI.startProcessing(
         {
-          name: processingForm.name.trim(),
-          type: processingForm.type,
-          volume: processingForm.volume,
-          serialNumber: processingForm.serial.trim() || undefined,
-          expiresAt: processingForm.expiresAt.trim(),
-          status: processingForm.status,
+          perfumeName: processingForm.perfumeName.trim(),
+          perfumeType: processingForm.perfumeType,
+          bottleCount: processingForm.bottleCount,
+          bottleVolume: processingForm.bottleVolume,
+          latinName: processingForm.latinName,
         },
         token
       );
       const entry: ProductionLog = {
         id: `proc-${Date.now()}`,
         type: "INFO",
-        message: `Zahtev za preradu: ${processingForm.name.trim()}`,
+        message: `Prerada završena: ${created.length} bočica parfema "${processingForm.perfumeName.trim()}"`,
         time: new Date().toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" }),
       };
       setProcessingLogs((prev) => [entry, ...prev].slice(0, 20));
-      setProcessingNotice("Parfem je uspešno dodat.");
+      setProcessingNotice(`Uspešno kreirano ${created.length} parfema.`);
       setProcessingForm({
-        name: "",
-        type: "Parfem" as PerfumeType,
-        volume: 150,
-        serial: "",
-        expiresAt: "",
-        status: "U izradi" as PerfumeStatus,
+        perfumeName: "",
+        perfumeType: "Parfem" as PerfumeType,
+        bottleCount: 1,
+        bottleVolume: 150,
+        latinName: "",
       });
       await fetchProcessingPerfumes();
-    } catch (err) {
-      setProcessingError("Neuspešna prerada parfema.");
+      await fetchProductionPlants();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Neuspešna prerada parfema.";
+      setProcessingError(msg);
       setProcessingNotice(null);
     } finally {
       setProcessingLoading(false);
     }
   };
 
-  const packageStatusClass = (status: PackageStatus) => {
-    return status === "Poslata" ? "status-purple" : "status-green";
+  const packageStatusClass = (status: PackageStatus | PackageStatusType) => {
+    return (status === "Poslata" || status === "POSLATA") ? "status-purple" : "status-green";
+  };
+
+  const packageStatusLabel = (status: PackageStatusType): string => {
+    return status === "SPAKOVANA" ? "Spakovana" : "Poslata";
   };
 
   const warehouseFillPercent = (warehouse: Warehouse) => {
@@ -309,7 +245,112 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     return Math.round((warehouse.used / warehouse.capacity) * 100);
   };
 
-  const selectedPackage = packagingSeed.find((pack) => pack.id === selectedPackageId) ?? packagingSeed[0];
+  const warehouses = useMemo<Warehouse[]>(() => {
+    return warehousesSeed.map((wh) => {
+      const sentPackages = packages.filter(
+        (pkg) => pkg.warehouseId === wh.id && pkg.status === "POSLATA"
+      );
+      return { ...wh, used: sentPackages.length };
+    });
+  }, [packages]);
+
+  const sentPackages = useMemo(() => {
+    return packages.filter((pkg) => pkg.status === "POSLATA" && pkg.warehouseId);
+  }, [packages]);
+
+  const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId) ?? packages[0];
+
+  const fetchPackages = async () => {
+    if (!token) return;
+    setPackagingLoading(true);
+    setPackagingError(null);
+    try {
+      const list = await packagingAPI.listPackages(token);
+      setPackages(list);
+      if (list.length > 0 && !selectedPackageId) {
+        setSelectedPackageId(list[0].id);
+      }
+    } catch (err) {
+      setPackagingError("Ne mogu da učitam listu ambalaza.");
+    } finally {
+      setPackagingLoading(false);
+    }
+  };
+
+  const handlePackSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!token) {
+      setPackagingError("Niste prijavljeni.");
+      setPackagingNotice(null);
+      return;
+    }
+    if (!packagingForm.name.trim()) {
+      setPackagingError("Popunite naziv paketa.");
+      setPackagingNotice(null);
+      return;
+    }
+    if (!packagingForm.senderAddress.trim()) {
+      setPackagingError("Popunite adresu pošiljaoca.");
+      setPackagingNotice(null);
+      return;
+    }
+    if (selectedPerfumeIds.size < 1) {
+      setPackagingError("Izaberite bar jedan parfem za pakovanje.");
+      setPackagingNotice(null);
+      return;
+    }
+
+    setPackagingLoading(true);
+    setPackagingError(null);
+    setPackagingNotice(null);
+    try {
+      const ids = Array.from(selectedPerfumeIds);
+      const pkg = await packagingAPI.packPerfumes(
+        {
+          name: packagingForm.name.trim(),
+          senderAddress: packagingForm.senderAddress.trim(),
+          perfumeType: "Parfem",
+          count: ids.length,
+          perfumeIds: ids,
+        },
+        token
+      );
+      setPackagingNotice(`Uspešno spakovano ${pkg.perfumeIds.length} parfema u ambalažu.`);
+      setPackagingForm({ name: "", senderAddress: "" });
+      setSelectedPerfumeIds(new Set());
+      await fetchPackages();
+      await fetchAvailablePerfumes();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Neuspešno pakovanje.";
+      setPackagingError(msg);
+      setPackagingNotice(null);
+    } finally {
+      setPackagingLoading(false);
+    }
+  };
+
+  const handleSendToWarehouse = async () => {
+    if (!token) {
+      setPackagingError("Niste prijavljeni.");
+      setPackagingNotice(null);
+      return;
+    }
+
+    setPackagingLoading(true);
+    setPackagingError(null);
+    setPackagingNotice(null);
+    try {
+      const pkg = await packagingAPI.sendToWarehouse({ packageId: selectedPackageId, warehouseId: sendWarehouseId }, token);
+      setPackagingNotice(`Ambalaza "${pkg.name}" poslata u skladiste.`);
+      await fetchPackages();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Neuspešno slanje u skladište.";
+      setPackagingError(msg);
+      setPackagingNotice(null);
+    } finally {
+      setPackagingLoading(false);
+    }
+  };
 
   const fetchProcessingPerfumes = async () => {
     if (!token) return;
@@ -322,6 +363,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       setProcessingError("Ne mogu da učitam listu parfema.");
     } finally {
       setProcessingLoading(false);
+    }
+  };
+
+  const fetchAvailablePerfumes = async () => {
+    if (!token) return;
+    try {
+      // Fetch both perfumes and packages fresh to avoid stale state
+      const [perfumeList, pkgList] = await Promise.all([
+        processingAPI.listPerfumes(token),
+        packagingAPI.listPackages(token),
+      ]);
+      const packedIds = new Set<string>();
+      pkgList.forEach((pkg) => {
+        if (pkg.perfumeIds) pkg.perfumeIds.forEach((pid) => packedIds.add(pid));
+      });
+      const available = perfumeList.filter(
+        (p) => p.status === "Zavrseno" && !packedIds.has(p.id)
+      );
+      setAvailablePerfumes(available);
+    } catch (err) {
+      // silently ignore — packaging page will just show empty list
     }
   };
 
@@ -349,7 +411,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   }, [plantQuery, overviewPlants]);
 
   const groupedPlants = useMemo(() => {
-    const map = new Map<string, { commonName: string; latinName: string; originCountry: string; count: number; strengthSum: number; statuses: Set<PlantStatus> }>();
+    const map = new Map<string, { commonName: string; latinName: string; originCountry: string; count: number; strengthSum: number; statuses: Set<PlantStatus>; planted: number; harvested: number; processed: number }>();
     for (const plant of productionPlants) {
       const key = plant.latinName;
       if (!map.has(key)) {
@@ -360,12 +422,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
           count: 0,
           strengthSum: 0,
           statuses: new Set<PlantStatus>(),
+          planted: 0,
+          harvested: 0,
+          processed: 0,
         });
       }
       const entry = map.get(key)!;
       entry.count += 1;
       entry.strengthSum += Number(plant.aromaticStrength);
       entry.statuses.add(plant.status);
+      if (plant.status === "POSADJENA") entry.planted += 1;
+      else if (plant.status === "UBRANA") entry.harvested += 1;
+      else if (plant.status === "PRERADJENA") entry.processed += 1;
     }
 
     return Array.from(map.values()).map((entry) => {
@@ -499,16 +567,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   };
 
   useEffect(() => {
-    if (activeTab === "Proizvodnja" || activeTab === "Pregled") {
+    if (activeTab === "Proizvodnja" || activeTab === "Pregled" || activeTab === "Prerada") {
       fetchProductionPlants();
     }
   }, [activeTab, token]);
 
   useEffect(() => {
-    if (activeTab === "Proizvodnja" && productionTab === "Servis prerade") {
+    if (activeTab === "Prerada") {
       fetchProcessingPerfumes();
     }
-  }, [activeTab, productionTab, token]);
+  }, [activeTab, token]);
+
+  useEffect(() => {
+    if (activeTab === "Pakovanje" || activeTab === "Skladištenje") {
+      fetchPackages();
+      fetchAvailablePerfumes();
+    }
+  }, [activeTab, token]);
 
   return (
     <div className="dashboard-root">
@@ -633,20 +708,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
             </div>
           ) : activeTab === "Proizvodnja" ? (
             <div className="production-shell">
-              <div className="production-tabs">
-                {(["Servis proizvodnje", "Servis prerade"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    className={`tab-btn ${productionTab === tab ? "active" : ""}`}
-                    onClick={() => setProductionTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              {productionTab === "Servis proizvodnje" ? (
-                <div className="production-grid">
+              <div className="production-grid">
                   <section className="panel">
                     <header className="panel-header">
                       <div className="panel-title">Upravljanje biljkama</div>
@@ -787,14 +849,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                             <th>Naziv</th>
                             <th>Latinski naziv</th>
                             <th>Jačina</th>
-                            <th>Količina</th>
-                            <th>Stanje</th>
+                            <th>Zasađeno</th>
+                            <th>Ubrano</th>
+                            <th>Prerađeno</th>
+                            <th>Ukupno</th>
                           </tr>
                         </thead>
                         <tbody>
                           {groupedPlants.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="text-muted">
+                              <td colSpan={7} className="text-muted">
                                 Nema biljaka za prikaz.
                               </td>
                             </tr>
@@ -804,12 +868,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                                 <td>{plant.commonName}</td>
                                 <td className="text-muted">{plant.latinName}</td>
                                 <td>{plant.avgStrength.toFixed(2)}</td>
-                                <td>{plant.count}</td>
                                 <td>
-                                  <span className={`status-chip ${statusClass(plant.status)}`}>
-                                    {statusLabel(plant.status)}
-                                  </span>
+                                  <span className="status-chip status-green">{plant.planted}</span>
                                 </td>
+                                <td>
+                                  <span className="status-chip status-yellow">{plant.harvested}</span>
+                                </td>
+                                <td>
+                                  <span className="status-chip status-purple">{plant.processed}</span>
+                                </td>
+                                <td>{plant.count}</td>
                               </tr>
                             ))
                           )}
@@ -844,8 +912,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </footer>
                   </section>
                 </div>
-              ) : (
-                <div className="production-grid">
+            </div>
+          ) : activeTab === "Prerada" ? (
+            <div className="production-shell">
+              <div className="production-grid">
                   <section className="panel">
                     <header className="panel-header">
                       <div className="panel-title">Servis prerade</div>
@@ -854,58 +924,72 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     <form className="production-form" onSubmit={handleProcessingSubmit}>
                       <div className="form-grid">
                         <label>
-                          Naziv
+                          Naziv parfema
                           <input
                             type="text"
-                            value={processingForm.name}
-                            onChange={(e) => setProcessingForm({ ...processingForm, name: e.target.value })}
+                            value={processingForm.perfumeName}
+                            onChange={(e) => setProcessingForm({ ...processingForm, perfumeName: e.target.value })}
                           />
                         </label>
                         <label>
                           Tip
                           <select
-                            value={processingForm.type}
-                            onChange={(e) => setProcessingForm({ ...processingForm, type: e.target.value as PerfumeType })}
+                            value={processingForm.perfumeType}
+                            onChange={(e) => setProcessingForm({ ...processingForm, perfumeType: e.target.value as PerfumeType })}
                           >
                             <option value="Parfem">Parfem</option>
                             <option value="Kolonjska voda">Kolonjska voda</option>
                           </select>
                         </label>
                         <label>
+                          Broj bočica
+                          <input
+                            type="number"
+                            min={1}
+                            value={processingForm.bottleCount}
+                            onChange={(e) => setProcessingForm({ ...processingForm, bottleCount: Number(e.target.value) })}
+                          />
+                        </label>
+                        <label>
                           Zapremina (ml)
+                          <div className="radio-group">
+                            <label className="radio-label">
+                              <input
+                                type="radio"
+                                name="bottleVolume"
+                                value={150}
+                                checked={processingForm.bottleVolume === 150}
+                                onChange={() => setProcessingForm({ ...processingForm, bottleVolume: 150 })}
+                              />
+                              150 ml
+                            </label>
+                            <label className="radio-label">
+                              <input
+                                type="radio"
+                                name="bottleVolume"
+                                value={250}
+                                checked={processingForm.bottleVolume === 250}
+                                onChange={() => setProcessingForm({ ...processingForm, bottleVolume: 250 })}
+                              />
+                              250 ml
+                            </label>
+                          </div>
+                        </label>
+                        <label>
+                          Biljka (latinski naziv)
                           <select
-                            value={processingForm.volume}
-                            onChange={(e) => setProcessingForm({ ...processingForm, volume: Number(e.target.value) })}
+                            value={processingForm.latinName}
+                            onChange={(e) => setProcessingForm({ ...processingForm, latinName: e.target.value })}
                           >
-                            <option value={150}>150</option>
-                            <option value={250}>250</option>
-                          </select>
-                        </label>
-                        <label>
-                          Serijski broj
-                          <input
-                            type="text"
-                            value={processingForm.serial}
-                            onChange={(e) => setProcessingForm({ ...processingForm, serial: e.target.value })}
-                          />
-                        </label>
-                        <label>
-                          Rok trajanja
-                          <input
-                            type="text"
-                            placeholder="dd.mm.yyyy"
-                            value={processingForm.expiresAt}
-                            onChange={(e) => setProcessingForm({ ...processingForm, expiresAt: e.target.value })}
-                          />
-                        </label>
-                        <label>
-                          Status
-                          <select
-                            value={processingForm.status}
-                            onChange={(e) => setProcessingForm({ ...processingForm, status: e.target.value as PerfumeStatus })}
-                          >
-                            <option value="U izradi">U izradi</option>
-                            <option value="Zavrseno">Zavrseno</option>
+                            <option value="">— izaberite biljku —</option>
+                            {[...new Map(productionPlants
+                              .filter((pl) => pl.status === "UBRANA")
+                              .map((pl) => [pl.latinName, pl] as const)
+                            ).values()].map((pl) => (
+                              <option key={pl.latinName} value={pl.latinName}>
+                                {pl.commonName} ({pl.latinName})
+                              </option>
+                            ))}
                           </select>
                         </label>
                       </div>
@@ -932,13 +1016,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                             <th>Zapremina</th>
                             <th>Serijski broj</th>
                             <th>Rok trajanja</th>
+                            <th>Biljka</th>
                             <th>Status</th>
                           </tr>
                         </thead>
                         <tbody>
                           {processingPerfumes.length === 0 ? (
                             <tr>
-                              <td colSpan={6} className="text-muted">
+                              <td colSpan={7} className="text-muted">
                                 Nema parfema za prikaz.
                               </td>
                             </tr>
@@ -950,6 +1035,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                                 <td>{p.volume} ml</td>
                                 <td>{p.serialNumber}</td>
                                 <td>{p.expiresAt}</td>
+                                <td>{p.plantId ? productionPlants.find((pl) => pl.id === p.plantId)?.commonName ?? p.plantId : "—"}</td>
                                 <td>
                                   <span className={`status-chip ${processingStatusClass(p.status)}`}>
                                     {p.status}
@@ -980,7 +1066,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </footer>
                   </section>
                 </div>
-              )}
             </div>
           ) : activeTab === "Skladištenje" ? (
             <div className="storage-shell">
@@ -1004,7 +1089,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </header>
 
                     <div className="storage-list">
-                      {warehousesSeed.map((warehouse) => (
+                      {warehouses.map((warehouse) => (
                         <article key={warehouse.id} className="warehouse-card">
                           <div className="warehouse-title">
                             <div>
@@ -1033,7 +1118,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </div>
 
                     <footer className="panel-footer">
-                      Ukupno skladišta: {warehousesSeed.length}
+                      Ukupno skladišta: {warehouses.length}
                     </footer>
                   </section>
 
@@ -1055,25 +1140,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                           </tr>
                         </thead>
                         <tbody>
-                          {packagesSeed.map((pack) => (
-                            <tr key={pack.id}>
-                              <td>{pack.id}</td>
-                              <td className="text-muted">{pack.sender}</td>
-                              <td>{pack.perfumeCount}</td>
-                              <td>{pack.warehouse}</td>
-                              <td>
-                                <span className={`status-chip ${packageStatusClass(pack.status)}`}>
-                                  {pack.status}
-                                </span>
+                          {sentPackages.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="text-muted">
+                                Nema ambalaza u skladištu.
                               </td>
                             </tr>
-                          ))}
+                          ) : (
+                            sentPackages.map((pack) => (
+                              <tr key={pack.id}>
+                                <td style={{ fontFamily: "monospace", fontSize: 12 }}>{pack.id.substring(0, 8)}...</td>
+                                <td className="text-muted">{pack.senderAddress}</td>
+                                <td>{pack.perfumeIds.length}</td>
+                                <td>{warehousesSeed.find((w) => w.id === pack.warehouseId)?.name ?? pack.warehouseId}</td>
+                                <td>
+                                  <span className={`status-chip ${packageStatusClass(pack.status)}`}>
+                                    {packageStatusLabel(pack.status)}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
 
                     <footer className="panel-footer">
-                      Ukupno ambalaža: {packagesSeed.length}
+                      Ukupno ambalaža: {sentPackages.length}
                     </footer>
                   </section>
                 </div>
@@ -1128,49 +1221,101 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   <div className="storage-header-title">Pakovanje parfema</div>
                 </header>
 
-                <form className="production-form" onSubmit={(e) => e.preventDefault()}>
+                {packagingError && (
+                  <div className="form-error" style={{ margin: "8px 16px", padding: "8px 12px", background: "#fee", color: "#c00", borderRadius: 6 }}>
+                    {packagingError}
+                  </div>
+                )}
+                {packagingNotice && (
+                  <div className="form-notice" style={{ margin: "8px 16px", padding: "8px 12px", background: "#efe", color: "#070", borderRadius: 6 }}>
+                    {packagingNotice}
+                  </div>
+                )}
+
+                <form className="production-form" onSubmit={handlePackSubmit}>
                   <div className="form-grid">
                     <label>
-                      Parfem
+                      Naziv paketa
                       <input
                         type="text"
-                        value={packagingForm.perfumeName}
-                        onChange={(e) => setPackagingForm({ ...packagingForm, perfumeName: e.target.value })}
+                        value={packagingForm.name}
+                        onChange={(e) => setPackagingForm({ ...packagingForm, name: e.target.value })}
                       />
                     </label>
                     <label>
-                      Zapremina (ml)
-                      <select
-                        value={packagingForm.volume}
-                        onChange={(e) => setPackagingForm({ ...packagingForm, volume: Number(e.target.value) })}
-                      >
-                        <option value={150}>150</option>
-                        <option value={250}>250</option>
-                      </select>
-                    </label>
-                    <label>
-                      Kolicina
+                      Adresa pošiljaoca
                       <input
-                        type="number"
-                        min={1}
-                        value={packagingForm.count}
-                        onChange={(e) => setPackagingForm({ ...packagingForm, count: Number(e.target.value) })}
+                        type="text"
+                        value={packagingForm.senderAddress}
+                        onChange={(e) => setPackagingForm({ ...packagingForm, senderAddress: e.target.value })}
                       />
-                    </label>
-                    <label>
-                      Skladiste
-                      <select
-                        value={packagingForm.warehouse}
-                        onChange={(e) => setPackagingForm({ ...packagingForm, warehouse: e.target.value })}
-                      >
-                        <option value="Centralno skladište">Centralno skladište</option>
-                        <option value="Severno skladište">Severno skladište</option>
-                        <option value="Južno skladište">Južno skladište</option>
-                      </select>
                     </label>
                   </div>
+
+                  <div style={{ margin: "12px 0" }}>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                      Izaberite parfeme za pakovanje ({selectedPerfumeIds.size} izabrano)
+                    </div>
+                    {availablePerfumes.length === 0 ? (
+                      <div className="text-muted" style={{ padding: "8px 0" }}>Nema dostupnih parfema za pakovanje.</div>
+                    ) : (
+                      <div className="table-wrapper" style={{ maxHeight: 220, overflowY: "auto" }}>
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th style={{ width: 36 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedPerfumeIds.size === availablePerfumes.length && availablePerfumes.length > 0}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedPerfumeIds(new Set(availablePerfumes.map((p) => p.id)));
+                                    } else {
+                                      setSelectedPerfumeIds(new Set());
+                                    }
+                                  }}
+                                />
+                              </th>
+                              <th>Naziv</th>
+                              <th>Tip</th>
+                              <th>Zapremina</th>
+                              <th>Serijski broj</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {availablePerfumes.map((p) => (
+                              <tr key={p.id}>
+                                <td>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPerfumeIds.has(p.id)}
+                                    onChange={(e) => {
+                                      const next = new Set(selectedPerfumeIds);
+                                      if (e.target.checked) {
+                                        next.add(p.id);
+                                      } else {
+                                        next.delete(p.id);
+                                      }
+                                      setSelectedPerfumeIds(next);
+                                    }}
+                                  />
+                                </td>
+                                <td>{p.name}</td>
+                                <td>{p.type}</td>
+                                <td>{p.volume} ml</td>
+                                <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.serialNumber}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="form-actions">
-                    <button className="btn btn-accent" type="submit">Spakuj</button>
+                    <button className="btn btn-accent" type="submit" disabled={packagingLoading}>
+                      {packagingLoading ? "Pakujem..." : `Spakuj (${selectedPerfumeIds.size})`}
+                    </button>
                   </div>
                 </form>
 
@@ -1178,26 +1323,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>ID ambalaze</th>
-                        <th>Skladiste</th>
+                        <th>Naziv</th>
+                        <th>Adresa pošiljaoca</th>
+                        <th>Parfema</th>
                         <th>Status</th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {packagingSeed.map((pack) => (
-                        <tr key={pack.id}>
-                          <td>{pack.id}</td>
-                          <td>{pack.warehouse}</td>
+                      {packages.map((pkg) => (
+                        <tr key={pkg.id}>
+                          <td>{pkg.name}</td>
+                          <td>{pkg.senderAddress}</td>
+                          <td>{pkg.perfumeIds.length}</td>
                           <td>
-                            <span className={`status-chip ${packageStatusClass(pack.status)}`}>
-                              {pack.status}
+                            <span className={`status-chip ${packageStatusClass(pkg.status)}`}>
+                              {packageStatusLabel(pkg.status)}
                             </span>
                           </td>
                           <td>
                             <button
-                              className={`btn btn-ghost ${selectedPackageId === pack.id ? "selected-btn" : ""}`}
-                              onClick={() => setSelectedPackageId(pack.id)}
+                              className={`btn btn-ghost ${selectedPackageId === pkg.id ? "selected-btn" : ""}`}
+                              onClick={() => setSelectedPackageId(pkg.id)}
                             >
                               Detalji
                             </button>
@@ -1209,36 +1356,64 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                 </div>
 
                 <footer className="panel-footer">
-                  Ukupno ambalaza: {packagingSeed.length}
+                  Ukupno ambalaza: {packages.length}
                 </footer>
               </section>
 
               <section className="panel packaging-panel">
                 <header className="storage-header packaging-header-alt">
-                  <div className="storage-header-title">Sadrzaj ambalaze</div>
-                  <button className="btn btn-ghost">Posalji u skladiste</button>
+                  <div className="storage-header-title">Detalji ambalaze</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select
+                      value={sendWarehouseId}
+                      onChange={(e) => setSendWarehouseId(e.target.value)}
+                      style={{ padding: "4px 8px", borderRadius: 4, border: "1px solid #ccc" }}
+                    >
+                      {warehousesSeed.map((w) => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                    <button className="btn btn-ghost" onClick={handleSendToWarehouse} disabled={packagingLoading}>
+                      Pošalji u skladište
+                    </button>
+                  </div>
                 </header>
 
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Parfem</th>
-                        <th>Zapremina</th>
-                        <th>Kolicina</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedPackage?.items.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.perfumeName}</td>
-                          <td>{item.volume} ml</td>
-                          <td>{item.count}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {selectedPackage ? (
+                  <div style={{ padding: 16 }}>
+                    <p><strong>ID:</strong> {selectedPackage.id}</p>
+                    <p><strong>Naziv:</strong> {selectedPackage.name}</p>
+                    <p><strong>Adresa pošiljaoca:</strong> {selectedPackage.senderAddress}</p>
+                    <p><strong>Skladište ID:</strong> {selectedPackage.warehouseId ?? "—"}</p>
+                    <p><strong>Status:</strong> {packageStatusLabel(selectedPackage.status)}</p>
+                    <p><strong>Broj parfema:</strong> {selectedPackage.perfumeIds.length}</p>
+                    <p><strong>Kreirano:</strong> {new Date(selectedPackage.createdAt).toLocaleString("sr-RS")}</p>
+
+                    <h4 style={{ marginTop: 16 }}>ID-evi parfema:</h4>
+                    <div className="table-wrapper">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Parfem ID</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedPackage.perfumeIds.map((pid, i) => (
+                            <tr key={pid}>
+                              <td>{i + 1}</td>
+                              <td style={{ fontFamily: "monospace", fontSize: 12 }}>{pid}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: 32, textAlign: "center", color: "#888" }}>
+                    Nema izabrane ambalaze
+                  </div>
+                )}
               </section>
             </div>
           ) : (
