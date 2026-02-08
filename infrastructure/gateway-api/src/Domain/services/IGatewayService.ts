@@ -32,6 +32,11 @@ export interface IGatewayService {
     status?: string;
   }): Promise<any>;
 
+  // Storage
+  sendToSales(count: number, userRole: string): Promise<any>;
+  receivePackage(warehouseId: string, packageData: any, userRole: string): Promise<any>;
+  listWarehouses(userRole: string): Promise<any>;
+  getWarehousePackages(warehouseId: string, userRole: string): Promise<any>;
   // Audit
   getAllAuditLogs(): Promise<any[]>;
   getAuditLogById(id: string): Promise<any>;

@@ -4,6 +4,9 @@ import { IPlantAPI } from "../api/plants/IPlantAPI";
 import { PlantDTO, PlantStatus } from "../models/plants/PlantDTO";
 import { IProcessingAPI } from "../api/processing/IProcessingAPI";
 import { PerfumeDTO, type PerfumeStatus, type PerfumeType } from "../models/processing/PerfumeDTO";
+import { IStorageAPI } from "../api/storage/IStorageAPI";
+import { WarehouseDTO } from "../models/storage/WarehouseDTO";
+import { StoredPackageDTO } from "../models/storage/StoredPackageDTO";
 import { DashboardNavbar } from "../components/dashboard/navbar/Navbar";
 import { UserManagement } from "../components/dashboard/users/UserManagement";
 import { AuditLogViewer } from "../components/dashboard/audit/AuditLogViewer";
@@ -14,6 +17,7 @@ export type DashboardPageProps = {
   userAPI: IUserAPI;
   plantAPI: IPlantAPI;
   processingAPI: IProcessingAPI;
+  storageAPI: IStorageAPI;
   auditAPI: IAuditAPI;
 };
 
@@ -36,23 +40,7 @@ type InvoiceRow = {
   date: string;
 };
 
-type Warehouse = {
-  id: string;
-  name: string;
-  address: string;
-  capacity: number;
-  used: number;
-};
-
 type PackageStatus = "Spakovana" | "Poslata";
-
-type PackageRow = {
-  id: string;
-  sender: string;
-  perfumeCount: number;
-  warehouse: string;
-  status: PackageStatus;
-};
 
 type CatalogItem = {
   id: string;
@@ -95,37 +83,6 @@ const invoicesSeed: InvoiceRow[] = [
 ];
 
 
-const warehousesSeed: Warehouse[] = [
-  {
-    id: "wh-1",
-    name: "Centralno skladište",
-    address: "Pariz, Rue de la Paix 45",
-    capacity: 100,
-    used: 67,
-  },
-  {
-    id: "wh-2",
-    name: "Severno skladište",
-    address: "Pariz, Avenue Foch 12",
-    capacity: 75,
-    used: 45,
-  },
-  {
-    id: "wh-3",
-    name: "Južno skladište",
-    address: "Pariz, Blvd. Saint-Germain 89",
-    capacity: 50,
-    used: 28,
-  },
-];
-
-const packagesSeed: PackageRow[] = [
-  { id: "AMB-2025-001", sender: "Centar za pakovanje 1", perfumeCount: 24, warehouse: "Centralno skladište", status: "Spakovana" },
-  { id: "AMB-2025-002", sender: "Centar za pakovanje 1", perfumeCount: 18, warehouse: "Centralno skladište", status: "Poslata" },
-  { id: "AMB-2025-003", sender: "Centar za pakovanje 2", perfumeCount: 30, warehouse: "Severno skladište", status: "Spakovana" },
-  { id: "AMB-2025-004", sender: "Centar za pakovanje 2", perfumeCount: 12, warehouse: "Severno skladište", status: "Spakovana" },
-  { id: "AMB-2025-005", sender: "Centar za pakovanje 3", perfumeCount: 20, warehouse: "Južno skladište", status: "Poslata" },
-];
 
 const catalogSeed: CatalogItem[] = [
   { id: "cat-1", name: "Rosa Mistika", type: "Parfem", volume: 250, price: 12500, stock: 45 },
@@ -163,7 +120,7 @@ const packagingSeed: PackagingRow[] = [
   },
 ];
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI, processingAPI, auditAPI, storageAPI }) => {
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token, user: authUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja" | "Korisnici" | "Evidencija">("Pregled");
@@ -201,7 +158,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [processingNotice, setProcessingNotice] = useState<string | null>(null);
 
-  
+  // Storage state
+  const [storageWarehouses, setStorageWarehouses] = useState<WarehouseDTO[]>([]);
+  const [storagePackages, setStoragePackages] = useState<StoredPackageDTO[]>([]);
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [storageSendCount, setStorageSendCount] = useState(1);
+  const [storageSending, setStorageSending] = useState(false);
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
+  const [receiveForm, setReceiveForm] = useState({ warehouseId: "", packageName: "", volume: 150, count: 1 });
+
+  // Available tabs based on user role
+  const availableTabs = useMemo(() => {
+    const allTabs = ["Pregled", "Proizvodnja", "Prerada", "Pakovanje", "Skladištenje", "Prodaja"] as const;
+    if (user?.role?.toUpperCase() === "ADMIN") {
+      return allTabs.filter(tab => tab !== "Skladištenje");
+    }
+    return allTabs;
+  }, [user?.role]);
+
   const filteredInvoices = useMemo(() => {
     const q = invoiceQuery.trim().toLowerCase();
     if (!q) return invoicesSeed;
@@ -306,11 +281,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     return status === "Poslata" ? "status-purple" : "status-green";
   };
 
-  const warehouseFillPercent = (warehouse: Warehouse) => {
-    if (!warehouse.capacity) return 0;
-    return Math.round((warehouse.used / warehouse.capacity) * 100);
-  };
-
   const selectedPackage = packagingSeed.find((pack) => pack.id === selectedPackageId) ?? packagingSeed[0];
 
   const fetchProcessingPerfumes = async () => {
@@ -324,6 +294,63 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
       setProcessingError("Ne mogu da učitam listu parfema.");
     } finally {
       setProcessingLoading(false);
+    }
+  };
+
+  // Storage API functions
+  const fetchWarehouses = async () => {
+    if (!token) return;
+    setStorageLoading(true);
+    setStorageError(null);
+    try {
+      const list = await storageAPI.listWarehouses(token);
+      setStorageWarehouses(list);
+      if (list.length > 0 && !selectedWarehouseId) {
+        setSelectedWarehouseId(list[0].id);
+      }
+    } catch (err) {
+      setStorageError("Ne mogu da učitam skladišta.");
+    } finally {
+      setStorageLoading(false);
+    }
+  };
+
+  const fetchWarehousePackages = async (whId?: string) => {
+    const id = whId ?? selectedWarehouseId;
+    if (!token || !id) return;
+    try {
+      const list = await storageAPI.getWarehousePackages(id, token);
+      setStoragePackages(list);
+    } catch {
+      setStoragePackages([]);
+    }
+  };
+
+  const handleSendToSales = async () => {
+    if (!token) return;
+    setStorageSending(true);
+    try {
+      await storageAPI.sendToSales(storageSendCount, token);
+      await fetchWarehousePackages();
+    } catch {
+      setStorageError("Greška pri slanju u prodaju.");
+    } finally {
+      setStorageSending(false);
+    }
+  };
+
+  const handleReceivePackage = async () => {
+    if (!token || !receiveForm.warehouseId) return;
+    try {
+      await storageAPI.receivePackage(
+        receiveForm.warehouseId,
+        { name: receiveForm.packageName, volume: receiveForm.volume, count: receiveForm.count },
+        token
+      );
+      await fetchWarehousePackages(receiveForm.warehouseId);
+      setReceiveForm({ warehouseId: "", packageName: "", volume: 150, count: 1 });
+    } catch {
+      setStorageError("Greška pri prijemu ambalaže.");
     }
   };
 
@@ -573,6 +600,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     }
   }, [activeTab, productionTab, token]);
 
+  useEffect(() => {
+    if (activeTab === "Skladištenje") {
+      fetchWarehouses();
+    }
+  }, [activeTab, token]);
+
+  useEffect(() => {
+    if (activeTab === "Skladištenje" && selectedWarehouseId) {
+      fetchWarehousePackages(selectedWarehouseId);
+    }
+  }, [selectedWarehouseId, activeTab]);
+
   return (
     <div className="dashboard-root">
       <div className="window dashboard-window">
@@ -586,7 +625,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
         <DashboardNavbar userAPI={userAPI} />
 
         <div className="dashboard-tabs">
-          {(["Pregled", "Proizvodnja", "Prerada", "Pakovanje", "Skladištenje", "Prodaja"] as const).map((tab) => (
+          {availableTabs.map((tab) => (
             <button
               key={tab}
               className={`tab-btn ${activeTab === tab ? "active" : ""}`}
@@ -1078,7 +1117,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                 ))}
               </div>
 
-              {storageTab === "Servis skladištenja" ? (
+              {storageLoading ? (
+                <div className="panel panel-empty"><p>Učitavanje...</p></div>
+              ) : storageError ? (
+                <div className="panel panel-empty"><p style={{ color: "#e74c3c" }}>{storageError}</p></div>
+              ) : storageTab === "Servis skladištenja" ? (
                 <div className="storage-grid">
                   <section className="panel storage-panel">
                     <header className="storage-header storage-header-orange">
@@ -1086,43 +1129,53 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </header>
 
                     <div className="storage-list">
-                      {warehousesSeed.map((warehouse) => (
-                        <article key={warehouse.id} className="warehouse-card">
+                      {storageWarehouses.map((warehouse) => (
+                        <article
+                          key={warehouse.id}
+                          className={`warehouse-card ${selectedWarehouseId === warehouse.id ? "selected-warehouse" : ""}`}
+                          style={{ cursor: "pointer", border: selectedWarehouseId === warehouse.id ? "2px solid #f39c12" : undefined }}
+                          onClick={() => setSelectedWarehouseId(warehouse.id)}
+                        >
                           <div className="warehouse-title">
                             <div>
                               <div className="warehouse-name">{warehouse.name}</div>
-                              <div className="warehouse-address">{warehouse.address}</div>
+                              <div className="warehouse-address">{warehouse.location}</div>
                             </div>
                             <div className="warehouse-icon">▣</div>
                           </div>
 
                           <div className="warehouse-meta">
                             <span>Kapacitet:</span>
-                            <strong>
-                              {warehouse.used} / {warehouse.capacity}
-                            </strong>
+                            <strong>{warehouse.maxCapacity}</strong>
                           </div>
-
-                          <div className="progress">
-                            <div
-                              className="progress-bar"
-                              style={{ width: `${warehouseFillPercent(warehouse)}%` }}
-                            ></div>
-                          </div>
-                          <div className="warehouse-percent">{warehouseFillPercent(warehouse)}% popunjeno</div>
                         </article>
                       ))}
                     </div>
 
                     <footer className="panel-footer">
-                      Ukupno skladišta: {warehousesSeed.length}
+                      Ukupno skladišta: {storageWarehouses.length}
                     </footer>
                   </section>
 
                   <section className="panel storage-panel">
                     <header className="storage-header storage-header-purple">
                       <div className="storage-header-title">Ambalaže u skladištu</div>
-                      <button className="btn btn-ghost">Pošalji</button>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        <input
+                          type="number"
+                          min={1}
+                          value={storageSendCount}
+                          onChange={(e) => setStorageSendCount(Number(e.target.value))}
+                          style={{ width: "60px", padding: "4px" }}
+                        />
+                        <button
+                          className="btn btn-ghost"
+                          onClick={handleSendToSales}
+                          disabled={storageSending}
+                        >
+                          {storageSending ? "Šaljem..." : "Pošalji u prodaju"}
+                        </button>
+                      </div>
                     </header>
 
                     <div className="table-wrapper">
@@ -1130,22 +1183,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                         <thead>
                           <tr>
                             <th>ID ambalaže</th>
-                            <th>Pošiljalac</th>
-                            <th>Broj parfema</th>
-                            <th>Skladište</th>
+                            <th>ID paketa</th>
+                            <th>Podaci</th>
                             <th>Status</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {packagesSeed.map((pack) => (
+                          {storagePackages.map((pack) => (
                             <tr key={pack.id}>
-                              <td>{pack.id}</td>
-                              <td className="text-muted">{pack.sender}</td>
-                              <td>{pack.perfumeCount}</td>
-                              <td>{pack.warehouse}</td>
+                              <td>{pack.id.substring(0, 8)}...</td>
+                              <td>{pack.packageId}</td>
+                              <td className="text-muted">
+                                {typeof pack.packageData === "object"
+                                  ? `${pack.packageData.name ?? "?"} (${pack.packageData.volume ?? "?"}ml × ${pack.packageData.count ?? "?"})`
+                                  : String(pack.packageData)}
+                              </td>
                               <td>
-                                <span className={`status-chip ${packageStatusClass(pack.status)}`}>
-                                  {pack.status}
+                                <span className={`status-chip ${pack.isDispatched ? "status-green" : "status-orange"}`}>
+                                  {pack.isDispatched ? "Poslata" : "U skladištu"}
                                 </span>
                               </td>
                             </tr>
@@ -1155,14 +1210,67 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     </div>
 
                     <footer className="panel-footer">
-                      Ukupno ambalaža: {packagesSeed.length}
+                      Ukupno ambalaža: {storagePackages.length}
                     </footer>
                   </section>
                 </div>
               ) : (
-                <div className="sales-grid">
+                <div className="storage-grid">
                   <section className="panel storage-panel">
                     <header className="storage-header sales-header-green">
+                      <div className="storage-header-title">Prijem ambalaže</div>
+                    </header>
+
+                    <form className="production-form" onSubmit={(e) => { e.preventDefault(); handleReceivePackage(); }}>
+                      <div className="form-grid">
+                        <label>
+                          Skladište
+                          <select
+                            value={receiveForm.warehouseId}
+                            onChange={(e) => setReceiveForm({ ...receiveForm, warehouseId: e.target.value })}
+                          >
+                            <option value="">-- izaberi --</option>
+                            {storageWarehouses.map((wh) => (
+                              <option key={wh.id} value={wh.id}>{wh.name}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Naziv parfema
+                          <input
+                            type="text"
+                            value={receiveForm.packageName}
+                            onChange={(e) => setReceiveForm({ ...receiveForm, packageName: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Zapremina (ml)
+                          <select
+                            value={receiveForm.volume}
+                            onChange={(e) => setReceiveForm({ ...receiveForm, volume: Number(e.target.value) })}
+                          >
+                            <option value={150}>150</option>
+                            <option value={250}>250</option>
+                          </select>
+                        </label>
+                        <label>
+                          Količina
+                          <input
+                            type="number"
+                            min={1}
+                            value={receiveForm.count}
+                            onChange={(e) => setReceiveForm({ ...receiveForm, count: Number(e.target.value) })}
+                          />
+                        </label>
+                      </div>
+                      <div className="form-actions">
+                        <button className="btn btn-accent" type="submit">Primi ambalažu</button>
+                      </div>
+                    </form>
+                  </section>
+
+                  <section className="panel storage-panel">
+                    <header className="storage-header sales-header-blue">
                       <div className="storage-header-title">Katalog parfema</div>
                     </header>
 
@@ -1180,7 +1288,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                           </div>
                           <div className="catalog-price">{item.price.toLocaleString("sr-RS")} RSD</div>
                           <div className="catalog-stock">Na stanju: {item.stock}</div>
-                          <button className="btn btn-accent catalog-btn">Dodaj u korpu</button>
                         </article>
                       ))}
                     </div>
@@ -1188,17 +1295,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     <footer className="panel-footer">
                       Ukupno proizvoda u katalogu: {catalogSeed.length}
                     </footer>
-                  </section>
-
-                  <section className="panel storage-panel">
-                    <header className="storage-header sales-header-blue">
-                      <div className="storage-header-title">Korpa (0)</div>
-                    </header>
-
-                    <div className="cart-empty">
-                      <div className="cart-icon">🛒</div>
-                      <div>Korpa je prazna</div>
-                    </div>
                   </section>
                 </div>
               )}
