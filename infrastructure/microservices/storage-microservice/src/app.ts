@@ -13,9 +13,10 @@ dotenv.config({ quiet: true });
 
 const app = express();
 
-const corsOrigin = process.env.CORS_ORIGIN ?? "*";
-const corsMethods = process.env.CORS_METHODS?.split(",").map(m => m.trim()) ?? ["POST", "GET"];
+const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5000";
+const corsMethods = process.env.CORS_METHODS?.split(",").map(m => m.trim()) ?? ["GET", "POST"];
 
+// Strict CORS — only Gateway allowed
 app.use(cors({ origin: corsOrigin, methods: corsMethods }));
 app.use(express.json());
 

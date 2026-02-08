@@ -11,13 +11,14 @@ dotenv.config({ quiet: true });
 const app = express();
 
 // Read CORS settings from environment
-const corsOrigin = process.env.CORS_ORIGIN ?? "*";
-const corsMethods = process.env.CORS_METHODS?.split(",").map(m => m.trim()) ?? ["POST"];
+const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
+const corsMethods = process.env.CORS_METHODS?.split(",").map(m => m.trim()) ?? ["GET", "POST", "PUT", "DELETE"];
 
-// Protected microservice from unauthorized access
+// Strict CORS — only allow configured origin
 app.use(cors({
   origin: corsOrigin,
   methods: corsMethods,
+  credentials: true,
 }));
 
 app.use(express.json());

@@ -20,6 +20,7 @@ import { CatalogItemDTO, InvoiceDTO, SaleType, PaymentMethod } from "../models/s
 import { useAuth } from "../hooks/useAuthHook";
 import { AnalyticsView } from "../components/dashboard/analytics/AnalyticsView";
 import { PerformanceView } from "../components/dashboard/performance/PerformanceView";
+import { DataTable } from "../components/common/DataTable";
 
 export type DashboardPageProps = {
   userAPI: IUserAPI;
@@ -142,8 +143,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
   const appIconUrl = `${import.meta.env.BASE_URL}icon.png`;
   const { token, user: authUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"Pregled" | "Proizvodnja" | "Prerada" | "Pakovanje" | "Skladištenje" | "Prodaja" | "Korisnici" | "Evidencija" | "Analiza prodaje" | "Analiza performansi">("Pregled");
-  const [plantQuery, setPlantQuery] = useState("");
-  const [invoiceQuery, setInvoiceQuery] = useState("");
+
   const [productionAction, setProductionAction] = useState<"plant" | "harvest" | "change-strength">("plant");
   const [storageTab, setStorageTab] = useState<"Servis skladištenja" | "Servis prodaje">("Servis skladištenja");
   const [packagingForm, setPackagingForm] = useState({
@@ -552,16 +552,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     }));
   }, [productionPlants]);
 
-  const filteredPlants = useMemo(() => {
-    const q = plantQuery.trim().toLowerCase();
-    if (!q) return overviewPlants;
-    return overviewPlants.filter((p) =>
-      [p.name, p.latinName, p.country, p.status]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [plantQuery, overviewPlants]);
+
 
   const groupedPlants = useMemo(() => {
     const map = new Map<string, { commonName: string; latinName: string; originCountry: string; count: number; strengthSum: number; statuses: Set<PlantStatus>; planted: number; harvested: number; processed: number }>();
@@ -930,16 +921,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
     return invoicesSeed;
   }, [salesInvoices]);
 
-  const filteredInvoicesReal = useMemo(() => {
-    const q = invoiceQuery.trim().toLowerCase();
-    if (!q) return overviewInvoices;
-    return overviewInvoices.filter((i) =>
-      [i.id, i.saleType, i.payment, i.amount.toString(), i.date]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [invoiceQuery, overviewInvoices]);
+
 
   // Fetch invoices on overview too (only for non-admin users)
   useEffect(() => {
@@ -1010,96 +992,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
               <section className="panel">
                 <header className="panel-header">
                   <div className="panel-title">Lista biljaka</div>
-                  <input
-                    type="search"
-                    placeholder="Pretraga biljaka..."
-                    value={plantQuery}
-                    onChange={(e) => setPlantQuery(e.target.value)}
-                  />
                 </header>
 
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Naziv</th>
-                        <th>Latinski naziv</th>
-                        <th>Jačina</th>
-                        <th>Zemlja</th>
-                        <th>Stanje</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPlants.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="text-muted">
-                            Nema biljaka za prikaz.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredPlants.map((p) => (
-                          <tr key={p.id}>
-                            <td>{p.name}</td>
-                            <td className="text-muted">{p.latinName}</td>
-                            <td>{p.strength.toFixed(1)}</td>
-                            <td>{p.country}</td>
-                            <td>
-                              <span className={`status-chip ${p.status === "Posađena" ? "status-green" : p.status === "Ubrana" ? "status-yellow" : "status-purple"}`}>
-                                {p.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <footer className="panel-footer">
-                  Ukupno biljaka: {filteredPlants.length}
-                </footer>
+                <DataTable
+                  columns={[
+                    { key: "name", label: "Naziv" },
+                    { key: "latinName", label: "Latinski naziv", className: "text-muted" },
+                    { key: "strength", label: "Jačina", render: (row) => row.strength.toFixed(1) },
+                    { key: "country", label: "Zemlja" },
+                    { key: "status", label: "Stanje", render: (row) => (
+                      <span className={`status-chip ${row.status === "Posađena" ? "status-green" : row.status === "Ubrana" ? "status-yellow" : "status-purple"}`}>
+                        {row.status}
+                      </span>
+                    )},
+                  ]}
+                  data={overviewPlants}
+                  searchPlaceholder="Pretraga biljaka..."
+                  emptyMessage="Nema biljaka za prikaz."
+                  rowKey="id"
+                  footer={<>Ukupno biljaka: {overviewPlants.length}</>}
+                />
               </section>
 
               {authUser?.role?.toUpperCase() !== "ADMIN" && (
                 <section className="panel">
                   <header className="panel-header">
                     <div className="panel-title">Fiskalni računi</div>
-                    <input
-                      type="search"
-                      placeholder="Pretraga računa..."
-                      value={invoiceQuery}
-                      onChange={(e) => setInvoiceQuery(e.target.value)}
-                    />
                   </header>
 
-                  <div className="table-wrapper">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Broj računa</th>
-                          <th>Tip prodaje</th>
-                          <th>Način plaćanja</th>
-                          <th>Iznos (RSD)</th>
-                          <th>Datum</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredInvoicesReal.map((i) => (
-                          <tr key={i.id}>
-                            <td>{i.id}</td>
-                            <td>{i.saleType}</td>
-                            <td>{i.payment}</td>
-                            <td>{i.amount.toLocaleString("sr-RS")}</td>
-                            <td>{i.date}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <footer className="panel-footer">
-                    Ukupno računa: {filteredInvoicesReal.length} | Ukupan promet: {filteredInvoicesReal.reduce((sum, i) => sum + i.amount, 0).toLocaleString("sr-RS")} RSD
-                  </footer>
+                  <DataTable
+                    columns={[
+                      { key: "id", label: "Broj računa" },
+                      { key: "saleType", label: "Tip prodaje" },
+                      { key: "payment", label: "Način plaćanja" },
+                      { key: "amount", label: "Iznos (RSD)", render: (row) => row.amount.toLocaleString("sr-RS") },
+                      { key: "date", label: "Datum" },
+                    ]}
+                    data={overviewInvoices}
+                    searchPlaceholder="Pretraga računa..."
+                    emptyMessage="Nema računa za prikaz."
+                    rowKey="id"
+                    footer={<>Ukupno računa: {overviewInvoices.length} | Ukupan promet: {overviewInvoices.reduce((sum, i) => sum + i.amount, 0).toLocaleString("sr-RS")} RSD</>}
+                  />
                 </section>
               )}
             </div>
@@ -1239,52 +1173,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                       <div className="notice success">{productionNotice}</div>
                     ) : null}
 
-                    <div className="table-wrapper">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Naziv</th>
-                            <th>Latinski naziv</th>
-                            <th>Jačina</th>
-                            <th>Zasađeno</th>
-                            <th>Ubrano</th>
-                            <th>Prerađeno</th>
-                            <th>Ukupno</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {groupedPlants.length === 0 ? (
-                            <tr>
-                              <td colSpan={7} className="text-muted">
-                                Nema biljaka za prikaz.
-                              </td>
-                            </tr>
-                          ) : (
-                            groupedPlants.map((plant) => (
-                              <tr key={plant.latinName}>
-                                <td>{plant.commonName}</td>
-                                <td className="text-muted">{plant.latinName}</td>
-                                <td>{plant.avgStrength.toFixed(2)}</td>
-                                <td>
-                                  <span className="status-chip status-green">{plant.planted}</span>
-                                </td>
-                                <td>
-                                  <span className="status-chip status-yellow">{plant.harvested}</span>
-                                </td>
-                                <td>
-                                  <span className="status-chip status-purple">{plant.processed}</span>
-                                </td>
-                                <td>{plant.count}</td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <footer className="panel-footer">
-                      Ukupno biljaka: {productionPlants.length} | Prikazano grupa: {groupedPlants.length}
-                    </footer>
+                    <DataTable
+                      columns={[
+                        { key: "commonName", label: "Naziv" },
+                        { key: "latinName", label: "Latinski naziv", className: "text-muted" },
+                        { key: "avgStrength", label: "Jačina", render: (row) => row.avgStrength.toFixed(2) },
+                        { key: "planted", label: "Zasađeno", render: (row) => <span className="status-chip status-green">{row.planted}</span> },
+                        { key: "harvested", label: "Ubrano", render: (row) => <span className="status-chip status-yellow">{row.harvested}</span> },
+                        { key: "processed", label: "Prerađeno", render: (row) => <span className="status-chip status-purple">{row.processed}</span> },
+                        { key: "count", label: "Ukupno" },
+                      ]}
+                      data={groupedPlants}
+                      searchPlaceholder="Pretraga biljaka..."
+                      emptyMessage="Nema biljaka za prikaz."
+                      rowKey={(row) => row.latinName}
+                      footer={<>Ukupno biljaka: {productionPlants.length} | Prikazano grupa: {groupedPlants.length}</>}
+                    />
                   </section>
 
                   <section className="panel">
@@ -1406,46 +1310,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                       <div className="notice success">{processingNotice}</div>
                     ) : null}
 
-                    <div className="table-wrapper">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Naziv</th>
-                            <th>Tip</th>
-                            <th>Zapremina</th>
-                            <th>Serijski broj</th>
-                            <th>Rok trajanja</th>
-                            <th>Biljka</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {processingPerfumes.length === 0 ? (
-                            <tr>
-                              <td colSpan={7} className="text-muted">
-                                Nema parfema za prikaz.
-                              </td>
-                            </tr>
-                          ) : (
-                            processingPerfumes.map((p) => (
-                              <tr key={p.id}>
-                                <td>{p.name}</td>
-                                <td>{p.type}</td>
-                                <td>{p.volume} ml</td>
-                                <td>{p.serialNumber}</td>
-                                <td>{p.expiresAt}</td>
-                                <td>{p.plantId ? productionPlants.find((pl) => pl.id === p.plantId)?.commonName ?? p.plantId : "—"}</td>
-                                <td>
-                                  <span className={`status-chip ${processingStatusClass(p.status)}`}>
-                                    {p.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                    <DataTable
+                      columns={[
+                        { key: "name", label: "Naziv" },
+                        { key: "type", label: "Tip" },
+                        { key: "volume", label: "Zapremina", render: (row) => `${row.volume} ml` },
+                        { key: "serialNumber", label: "Serijski broj" },
+                        { key: "expiresAt", label: "Rok trajanja" },
+                        { key: "plantId", label: "Biljka", render: (row) => row.plantId ? productionPlants.find((pl) => pl.id === row.plantId)?.commonName ?? row.plantId : "—" },
+                        { key: "status", label: "Status", render: (row) => (
+                          <span className={`status-chip ${processingStatusClass(row.status)}`}>
+                            {row.status}
+                          </span>
+                        )},
+                      ]}
+                      data={processingPerfumes}
+                      searchPlaceholder="Pretraga parfema..."
+                      emptyMessage="Nema parfema za prikaz."
+                      rowKey="id"
+                    />
                   </section>
 
                   <section className="panel">
@@ -1546,48 +1429,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                       </div>
                     </header>
 
-                    <div className="table-wrapper">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>ID ambalaže</th>
-                            <th>ID paketa</th>
-                            <th>Podaci</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {storagePackages.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="text-muted">
-                                Nema ambalaža u skladištu.
-                              </td>
-                            </tr>
-                          ) : (
-                            storagePackages.map((pack) => (
-                              <tr key={pack.id}>
-                                <td>{pack.id.substring(0, 8)}...</td>
-                                <td>{pack.packageId}</td>
-                                <td className="text-muted">
-                                  {typeof pack.packageData === "object"
-                                    ? `${pack.packageData.name ?? "?"} (${pack.packageData.volume ?? "?"}ml × ${pack.packageData.count ?? "?"})`
-                                    : String(pack.packageData)}
-                                </td>
-                                <td>
-                                  <span className={`status-chip ${pack.isDispatched ? "status-green" : "status-orange"}`}>
-                                    {pack.isDispatched ? "Poslata" : "U skladištu"}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <footer className="panel-footer">
-                      Ukupno ambalaža: {storagePackages.length}
-                    </footer>
+                    <DataTable
+                      columns={[
+                        { key: "id", label: "ID ambalaže", render: (row) => `${row.id.substring(0, 8)}...` },
+                        { key: "packageId", label: "ID paketa" },
+                        { key: "packageData", label: "Podaci", className: "text-muted", render: (row) =>
+                          typeof row.packageData === "object"
+                            ? `${row.packageData.name ?? "?"} (${row.packageData.volume ?? "?"}ml × ${row.packageData.count ?? "?"})`
+                            : String(row.packageData)
+                        },
+                        { key: "isDispatched", label: "Status", render: (row) => (
+                          <span className={`status-chip ${row.isDispatched ? "status-green" : "status-orange"}`}>
+                            {row.isDispatched ? "Poslata" : "U skladištu"}
+                          </span>
+                        )},
+                      ]}
+                      data={storagePackages}
+                      searchPlaceholder="Pretraga ambalaža..."
+                      emptyMessage="Nema ambalaža u skladištu."
+                      rowKey="id"
+                      footer={<>Ukupno ambalaža: {storagePackages.length}</>}
+                    />
                   </section>
                 </div>
               ) : (
@@ -1780,45 +1642,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                   </div>
                 </form>
 
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Naziv</th>
-                        <th>Adresa pošiljaoca</th>
-                        <th>Parfema</th>
-                        <th>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {packages.map((pkg) => (
-                        <tr key={pkg.id}>
-                          <td>{pkg.name}</td>
-                          <td>{pkg.senderAddress}</td>
-                          <td>{pkg.perfumeIds.length}</td>
-                          <td>
-                            <span className={`status-chip ${packageStatusClass(pkg.status)}`}>
-                              {packageStatusLabel(pkg.status)}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              className={`btn btn-ghost ${selectedPackageId === pkg.id ? "selected-btn" : ""}`}
-                              onClick={() => setSelectedPackageId(pkg.id)}
-                            >
-                              Detalji
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <footer className="panel-footer">
-                  Ukupno ambalaza: {packages.length}
-                </footer>
+                <DataTable
+                  columns={[
+                    { key: "name", label: "Naziv" },
+                    { key: "senderAddress", label: "Adresa pošiljaoca" },
+                    { key: "perfumeIds", label: "Parfema", render: (row) => row.perfumeIds.length, sortable: false },
+                    { key: "status", label: "Status", render: (row) => (
+                      <span className={`status-chip ${packageStatusClass(row.status)}`}>
+                        {packageStatusLabel(row.status)}
+                      </span>
+                    )},
+                    { key: "_actions", label: "", sortable: false, render: (row) => (
+                      <button
+                        className={`btn btn-ghost ${selectedPackageId === row.id ? "selected-btn" : ""}`}
+                        onClick={() => setSelectedPackageId(row.id)}
+                      >
+                        Detalji
+                      </button>
+                    )},
+                  ]}
+                  data={packages}
+                  searchPlaceholder="Pretraga ambalaza..."
+                  emptyMessage="Nema ambalaza za prikaz."
+                  rowKey="id"
+                  footer={<>Ukupno ambalaza: {packages.length}</>}
+                />
               </section>
 
               <section className="panel packaging-panel">
@@ -1851,24 +1699,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     <p><strong>Kreirano:</strong> {new Date(selectedPackageItem.createdAt).toLocaleString("sr-RS")}</p>
 
                     <h4 style={{ marginTop: 16 }}>ID-evi parfema:</h4>
-                    <div className="table-wrapper">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>#</th>
-                            <th>Parfem ID</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedPackageItem.perfumeIds.map((pid, i) => (
-                            <tr key={pid}>
-                              <td>{i + 1}</td>
-                              <td style={{ fontFamily: "monospace", fontSize: 12 }}>{pid}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <DataTable
+                      columns={[
+                        { key: "_index", label: "#", sortable: false, render: (_row, idx) => idx + 1 },
+                        { key: "pid", label: "Parfem ID", render: (row) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{row.pid}</span> },
+                      ]}
+                      data={selectedPackageItem.perfumeIds.map((pid) => ({ pid }))}
+                      hideSearch
+                      rowKey={(row) => row.pid}
+                      emptyMessage="Nema parfema."
+                    />
                   </div>
                 ) : (
                   <div style={{ padding: 32, textAlign: "center", color: "#888" }}>
@@ -1952,47 +1792,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     {salesCart.length === 0 ? (
                       <p style={{ padding: 20, textAlign: "center", color: "#888" }}>Korpa je prazna. Dodajte parfeme iz kataloga.</p>
                     ) : (
-                      <div className="table-wrapper">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>Parfem</th>
-                              <th>Cena (RSD)</th>
-                              <th>Količina</th>
-                              <th>Ukupno (RSD)</th>
-                              <th></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {salesCart.map((item) => (
-                              <tr key={item.perfumeId}>
-                                <td>{item.perfumeName}</td>
-                                <td>{item.unitPrice.toLocaleString("sr-RS")}</td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={item.quantity}
-                                    onChange={(e) => updateCartQuantity(item.perfumeId, Number(e.target.value))}
-                                    style={{ width: "60px", padding: "4px", background: "#2a2a2a", color: "#e0e0e0", border: "1px solid #444", borderRadius: 4 }}
-                                  />
-                                </td>
-                                <td>{(item.quantity * item.unitPrice).toLocaleString("sr-RS")}</td>
-                                <td>
-                                  <button className="btn btn-ghost" onClick={() => removeFromCart(item.perfumeId)} style={{ color: "#ef4444" }}>
-                                    ✕
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <DataTable
+                        columns={[
+                          { key: "perfumeName", label: "Parfem" },
+                          { key: "unitPrice", label: "Cena (RSD)", render: (row) => row.unitPrice.toLocaleString("sr-RS") },
+                          { key: "quantity", label: "Količina", sortable: false, render: (row) => (
+                            <input
+                              type="number"
+                              min={1}
+                              value={row.quantity}
+                              onChange={(e) => updateCartQuantity(row.perfumeId, Number(e.target.value))}
+                              style={{ width: "60px", padding: "4px", background: "#2a2a2a", color: "#e0e0e0", border: "1px solid #444", borderRadius: 4 }}
+                            />
+                          )},
+                          { key: "_total", label: "Ukupno (RSD)", render: (row) => (row.quantity * row.unitPrice).toLocaleString("sr-RS") },
+                          { key: "_remove", label: "", sortable: false, render: (row) => (
+                            <button className="btn btn-ghost" onClick={() => removeFromCart(row.perfumeId)} style={{ color: "#ef4444" }}>
+                              ✕
+                            </button>
+                          )},
+                        ]}
+                        data={salesCart}
+                        hideSearch
+                        rowKey={(row) => row.perfumeId}
+                        footer={<>Ukupno stavki: {salesCart.length} | Ukupan iznos: {cartTotal.toLocaleString("sr-RS")} RSD</>}
+                      />
                     )}
-
-                    <footer className="panel-footer">
-                      Ukupno stavki: {salesCart.length} | Ukupan iznos: {cartTotal.toLocaleString("sr-RS")} RSD
-                    </footer>
                   </section>
 
                   <section className="panel storage-panel">
@@ -2067,49 +1892,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ userAPI, plantAPI,
                     {salesLoading ? (
                       <p style={{ padding: 20, textAlign: "center", color: "#888" }}>Učitavanje faktura...</p>
                     ) : (
-                      <div className="table-wrapper">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th>ID fakture</th>
-                              <th>Tip prodaje</th>
-                              <th>Način plaćanja</th>
-                              <th>Stavke</th>
-                              <th>Iznos (RSD)</th>
-                              <th>Datum</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {salesInvoices.length === 0 ? (
-                              <tr>
-                                <td colSpan={6} className="text-muted">Nema faktura za prikaz.</td>
-                              </tr>
-                            ) : (
-                              salesInvoices.map((inv) => (
-                                <tr key={inv.id}>
-                                  <td>{inv.id.substring(0, 8)}...</td>
-                                  <td>
-                                    <span className={`status-chip ${inv.saleType === "MALOPRODAJA" ? "status-green" : "status-purple"}`}>
-                                      {saleTypeLabel(inv.saleType)}
-                                    </span>
-                                  </td>
-                                  <td>{paymentLabel(inv.paymentMethod)}</td>
-                                  <td className="text-muted">
-                                    {inv.items.map((it) => `${it.perfumeName} ×${it.quantity}`).join(", ")}
-                                  </td>
-                                  <td>{Number(inv.totalAmount).toLocaleString("sr-RS")}</td>
-                                  <td>{new Date(inv.createdAt).toLocaleDateString("sr-RS")}</td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                      <DataTable
+                        columns={[
+                          { key: "id", label: "ID fakture", render: (row) => `${row.id.substring(0, 8)}...` },
+                          { key: "saleType", label: "Tip prodaje", render: (row) => (
+                            <span className={`status-chip ${row.saleType === "MALOPRODAJA" ? "status-green" : "status-purple"}`}>
+                              {saleTypeLabel(row.saleType)}
+                            </span>
+                          )},
+                          { key: "paymentMethod", label: "Način plaćanja", render: (row) => paymentLabel(row.paymentMethod) },
+                          { key: "items", label: "Stavke", className: "text-muted", sortable: false, render: (row) =>
+                            row.items.map((it: any) => `${it.perfumeName} ×${it.quantity}`).join(", ")
+                          },
+                          { key: "totalAmount", label: "Iznos (RSD)", render: (row) => Number(row.totalAmount).toLocaleString("sr-RS") },
+                          { key: "createdAt", label: "Datum", render: (row) => new Date(row.createdAt).toLocaleDateString("sr-RS") },
+                        ]}
+                        data={salesInvoices}
+                        searchPlaceholder="Pretraga faktura..."
+                        emptyMessage="Nema faktura za prikaz."
+                        rowKey="id"
+                        footer={<>Ukupno faktura: {salesInvoices.length} | Ukupan promet: {salesInvoices.reduce((sum, i) => sum + Number(i.totalAmount), 0).toLocaleString("sr-RS")} RSD</>}
+                      />
                     )}
-
-                    <footer className="panel-footer">
-                      Ukupno faktura: {salesInvoices.length} | Ukupan promet: {salesInvoices.reduce((sum, i) => sum + Number(i.totalAmount), 0).toLocaleString("sr-RS")} RSD
-                    </footer>
                   </section>
                 </div>
               )}
